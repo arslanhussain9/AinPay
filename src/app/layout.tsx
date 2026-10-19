@@ -1,0 +1,24 @@
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "QuickUPI — Financial Infrastructure for Direct UPI Payments",
+  description: "Don't build a payment gateway. Make existing UPI 10x smarter. 0% transaction fees, direct T+0 bank settlement, and reusable limit QRs.",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+      </head>
+      <body className="min-h-screen bg-white text-[#0d253d] antialiased selection:bg-[#b9b9f9] selection:text-[#533afd]">
+        {children}
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,20 @@
+{
+  "1": "Architecture Decision Records (ADR) & Design Rationale",
+  "2": "YOUPI PG V2 Gateway",
+  "4": "utils.ts",
+  "5": "3.4 Multi-Bank Regular Expression Parser Engine",
+  "7": "QuickUPI / PayMe — Product Requirements Document (PRD)",
+  "8": "QuickUPI REST API & Embed SDK Specification",
+  "9": "QuickUPI (PayMe)",
+  "10": "QuickUPI System Architecture & Technical Specifications",
+  "11": "Milestone Breakdown & Progress",
+  "12": "QuickUPI Database Schema & Data Models",
+  "13": "stripe-DESIGN.md",
+  "14": "[campaignId]/page.tsx",
+  "15": "compilerOptions",
+  "16": "layout.tsx",
+  "17": "next.config.mjs",
+  "18": "quickupi.js",
+  "19": "next-env.d.ts",
+  "20": "postcss.config.js"
+}

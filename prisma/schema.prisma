@@ -1,0 +1,164 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Merchant {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  passwordHash   String
+  name           String
+  businessName   String?
+  handle         String       @unique // vanity url: e.g. "arslan" -> /pay/arslan
+  vpa            String       // e.g. "arslan@okhdfcbank"
+  tier           String       @default("FREE") // FREE, PRO, BUSINESS
+  
+  publishableKey String       @unique @default(cuid())
+  secretKey      String       @unique @default(cuid())
+  observerSecret String       @default(cuid())
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  campaigns       PaymentCampaign[]
+  transactions    Transaction[]
+  observerDevices ObserverDevice[]
+
+  @@index([handle])
+  @@index([publishableKey])
+}
+
+model PaymentCampaign {
+  id               String         @id @default(cuid())
+  merchantId       String
+  merchant         Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  title            String
+  slug             String
+  description      String?
+  
+  // Stored strictly in integer paise (₹2,000.00 = 200000)
+  amountPaise      Int
+  isFixedAmount    Boolean        @default(true)
+  
+  // Hero limits
+  totalCapPaise    Int?           // e.g. 5000000 (₹50,000 cap)
+  collectedPaise   Int            @default(0)
+  
+  maxSlots         Int?           // e.g. 25 slots
+  usedSlots        Int            @default(0)
+  
+  expiresAt        DateTime?      // dynamic timer expiry
+  status           String         @default("ACTIVE") // ACTIVE, PAUSED, SLOTS_EXHAUSTED, CAP_REACHED, EXPIRED
+  enableMicroPaise Boolean        @default(false)
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  sessions         PaymentSession[]
+  transactions     Transaction[]
+  microPaiseLeases MicroPaiseLease[]
+
+  @@unique([merchantId, slug])
+  @@index([merchantId, status])
+}
+
+model PaymentSession {
+  id                  String          @id @default(cuid())
+  campaignId          String
+  campaign            PaymentCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  payerName           String?
+  payerEmail          String?
+  payerPhone          String?
+  customNote          String?
+
+  baseAmountPaise     Int
+  offsetPaise         Int             @default(0) // sub-rupee variation (e.g. 14 for ₹0.14)
+  finalAmountPaise    Int
+
+  status              String          @default("AWAITING_PAYMENT") // AWAITING_PAYMENT, UTR_SUBMITTED, VERIFIED, EXPIRED, OVERSUBSCRIBED
+  submittedUtr        String?
+  expiresAt           DateTime
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  transaction         Transaction?
+  lease               MicroPaiseLease?
+
+  @@index([campaignId, status])
+  @@index([finalAmountPaise, status])
+}
+
+model Transaction {
+  id                 String             @id @default(cuid())
+  merchantId         String
+  merchant           Merchant           @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  
+  campaignId         String
+  campaign           PaymentCampaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  sessionId          String?            @unique
+  session            PaymentSession?    @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  utrNumber          String?            @unique // 12-digit bank reference number
+  amountPaise        Int
+  
+  verificationMode   String             @default("MANUAL_UTR") // MANUAL_UTR, OBSERVER_SMS, OBSERVER_NOTIFICATION, MICRO_PAISE_MATCH
+  status             String             @default("PENDING") // PENDING, VERIFIED, REJECTED, EXPIRED, AMOUNT_MISMATCH, OVERSUBSCRIBED_REFUND_DUE
+  
+  rawBankAlertText   String?
+  payerVpa           String?
+  payerName          String?
+  payerPhone         String?
+
+  verifiedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([merchantId, status])
+  @@index([campaignId, status])
+  @@index([utrNumber])
+}
+
+model ObserverDevice {
+  id             String       @id @default(cuid())
+  merchantId     String
+  merchant       Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  deviceName     String       // e.g. "Pixel 8 Pro (Primary SIM)"
+  deviceId       String       @unique // hardware UUID
+  deviceSecret   String       // HMAC key provisioned via pairing QR
+  
+  appVersion     String?
+  batteryPct     Int?
+  isCharging     Boolean      @default(false)
+  
+  lastPingAt     DateTime     @default(now())
+  status         String       @default("ONLINE") // ONLINE, OFFLINE
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([merchantId, status])
+}
+
+model MicroPaiseLease {
+  id             String          @id @default(cuid())
+  campaignId     String
+  campaign       PaymentCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  sessionId      String          @unique
+  session        PaymentSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  offsetPaise    Int             // 1 to 99
+  leasedAt       DateTime        @default(now())
+  expiresAt      DateTime
+  isReleased     Boolean         @default(false)
+
+  @@index([campaignId, offsetPaise, isReleased])
+}
