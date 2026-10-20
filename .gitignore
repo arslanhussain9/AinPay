@@ -35,5 +35,8 @@ Thumbs.db
 # TypeScript declaration cache
 next-env.d.ts
 
-# Graphify temporary caches
-graphify-out/cache/
+# Local agent & documentation guides
+.agents/
+docs/
+graphify-out/
+stripe-DESIGN.md
