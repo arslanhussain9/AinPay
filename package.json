@@ -1,7 +1,7 @@
 {
-  "name": "quickupi",
+  "name": "payme",
   "version": "1.0.0",
-  "description": "QuickUPI — Smart UPI Payment Collection Platform with Dynamic Limits & Sovereign Settlement",
+  "description": "PayMe — The 0% Fee Razorpay.me for Indian Freelancers & Independent Creators",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",

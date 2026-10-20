@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "QuickUPI — Financial Infrastructure for Direct UPI Payments",
-  description: "Don't build a payment gateway. Make existing UPI 10x smarter. 0% transaction fees, direct T+0 bank settlement, and reusable limit QRs.",
+  title: "PayMe — The 0% Fee Razorpay.me for Indian Freelancers",
+  description: "Get paid directly to bank over UPI. Zero gateway commissions, instant T+0 settlement, and your own branded payme.in/username link.",
 };
 
 export default function RootLayout({

@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { formatINR, buildUPIUri, validateUTR } from "@/lib/utils";
+import { formatINR, buildUPIUri } from "@/lib/utils";
 import { VectorQR } from "@/components/qr/VectorQR";
 import { MobileDrawer } from "@/components/checkout/MobileDrawer";
+import { UtrSubmissionBox } from "@/components/checkout/UtrSubmissionBox";
 import {
-  ArrowRight,
   CheckCircle2,
   ChevronRight,
-  Globe,
   Lock,
-  Send,
   ShieldCheck,
   Sparkles,
   Users,
@@ -26,17 +24,13 @@ export function FreelancerPageClient({
   freelancer,
   paymentLinks,
 }: FreelancerPageClientProps) {
-  // Quick Custom Amount Pay State
+  const presets = [500, 1500, 5000, 10000];
   const [selectedPreset, setSelectedPreset] = useState<number>(1500);
   const [customAmountRupees, setCustomAmountRupees] = useState<string>("1500");
-  const [clientName, setClientName] = useState<string>("");
   const [clientNote, setClientNote] = useState<string>("");
   const [clientUtr, setClientUtr] = useState<string>("");
   const [payStep, setPayStep] = useState<"SELECT" | "PAY_QR" | "SUCCESS">("SELECT");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
-
-  const presets = [500, 1500, 5000, 10000];
 
   const currentAmountRupees = parseInt(customAmountRupees, 10) || 0;
   const currentAmountPaise = currentAmountRupees * 100;
@@ -59,55 +53,13 @@ export function FreelancerPageClient({
     setPayStep("PAY_QR");
   };
 
-  const handleConfirmUtr = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateUTR(clientUtr)) {
-      setErrorMsg("Please enter a valid 12-digit UPI reference number (UTR).");
-      return;
-    }
-    if (!clientName.trim()) {
-      setErrorMsg("Please enter your name.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMsg("");
-
-    try {
-      const res = await fetch("/api/v1/payments/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          freelancerId: freelancer.id,
-          payerName: clientName.trim(),
-          amountPaise: currentAmountPaise,
-          utr: clientUtr.trim(),
-          note: clientNote.trim() || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setPayStep("SUCCESS");
-      } else {
-        setErrorMsg(data.error || "Failed to submit payment. Please verify your UTR.");
-      }
-    } catch {
-      setErrorMsg("Network error. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#f6f9fc] text-[#0d253d] flex flex-col items-center p-4 sm:p-6 lg:p-12 font-normal">
-      {/* Top subtle atmospheric gradient sheen */}
       <div className="fixed top-0 left-0 w-full h-64 bg-gradient-to-b from-[#b9b9f9]/20 via-[#f5e9d4]/20 to-transparent pointer-events-none" />
 
       <div className="w-full max-w-xl z-10 flex flex-col gap-6">
-        {/* Profile Card (Stripe / Razorpay.me Clean Style) */}
+        {/* Profile Card */}
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e3e8ee] stripe-shadow-md flex flex-col items-center text-center relative overflow-hidden">
-          {/* Avatar with gradient border */}
           <div className="w-20 h-20 rounded-2xl bg-[#533afd] text-white flex items-center justify-center font-bold text-3xl shadow-sm mb-4">
             {freelancer.name.slice(0, 2).toUpperCase()}
           </div>
@@ -131,7 +83,6 @@ export function FreelancerPageClient({
             </p>
           )}
 
-          {/* Trust Badges */}
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
             <span className="px-3 py-1 rounded-full bg-[#f6f9fc] border border-[#e3e8ee] text-[#273951] font-medium flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#533afd]" />
@@ -142,7 +93,6 @@ export function FreelancerPageClient({
             </span>
           </div>
 
-          {/* Social Links */}
           <div className="mt-4 flex items-center gap-4 text-xs text-[#64748d]">
             {freelancer.twitter && (
               <a href={freelancer.twitter} target="_blank" rel="noreferrer" className="hover:text-[#533afd]">
@@ -162,7 +112,7 @@ export function FreelancerPageClient({
           </div>
         </div>
 
-        {/* Quick Pay Box (Custom Amount / Tip / Project Deposit) */}
+        {/* Quick Pay Box */}
         <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#e3e8ee] stripe-shadow-md flex flex-col gap-5">
           <div className="flex items-center justify-between pb-3 border-b border-[#e3e8ee]">
             <div className="flex items-center gap-2">
@@ -176,7 +126,6 @@ export function FreelancerPageClient({
 
           {payStep === "SELECT" && (
             <form onSubmit={handleStartPay} className="flex flex-col gap-4">
-              {/* Presets Pills */}
               <div>
                 <label className="text-xs text-[#64748d] mb-1.5 block">Select or Enter Amount:</label>
                 <div className="grid grid-cols-4 gap-2">
@@ -200,7 +149,6 @@ export function FreelancerPageClient({
                 </div>
               </div>
 
-              {/* Custom Amount Input */}
               <div className="relative">
                 <span className="absolute left-3 top-3 text-lg font-semibold text-[#64748d]">₹</span>
                 <input
@@ -216,7 +164,6 @@ export function FreelancerPageClient({
                 />
               </div>
 
-              {/* Client Note */}
               <input
                 type="text"
                 value={clientNote}
@@ -248,7 +195,6 @@ export function FreelancerPageClient({
                 </button>
               </div>
 
-              {/* Desktop Vector SVG QR */}
               <div className="hidden sm:flex flex-col items-center">
                 <VectorQR
                   upiUri={upiUri}
@@ -258,7 +204,6 @@ export function FreelancerPageClient({
                 />
               </div>
 
-              {/* Mobile 1-Tap Drawer */}
               <div className="sm:hidden w-full">
                 <MobileDrawer
                   upiUri={upiUri}
@@ -267,42 +212,15 @@ export function FreelancerPageClient({
                 />
               </div>
 
-              {/* UTR Confirmation Form */}
-              <form onSubmit={handleConfirmUtr} className="pt-3 border-t border-[#e3e8ee] flex flex-col gap-2.5">
-                <span className="text-xs font-semibold text-[#0d253d]">
-                  Confirm Payment (Enter 12-Digit UTR):
-                </span>
-
-                <input
-                  type="text"
-                  required
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Your Full Name"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                />
-
-                <input
-                  type="text"
-                  required
-                  maxLength={12}
-                  value={clientUtr}
-                  onChange={(e) => setClientUtr(e.target.value.replace(/\D/g, ""))}
-                  placeholder="Enter 12-digit UTR from GPay / PhonePe"
-                  className="w-full px-3 py-2 text-xs font-mono tracking-widest rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                />
-
-                {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting || clientUtr.length !== 12}
-                  className="w-full btn-stripe-primary !py-2 text-xs disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{isSubmitting ? "Submitting..." : "Submit UTR for Verification"}</span>
-                </button>
-              </form>
+              <UtrSubmissionBox
+                freelancerId={freelancer.id}
+                amountPaise={currentAmountPaise}
+                note={clientNote || `Payment to ${freelancer.name}`}
+                onSuccess={(utr) => {
+                  setClientUtr(utr);
+                  setPayStep("SUCCESS");
+                }}
+              />
             </div>
           )}
 

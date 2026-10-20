@@ -5,7 +5,6 @@ import { formatINR, rupeesToPaise } from "@/lib/utils";
 import {
   ArrowUpRight,
   Check,
-  CheckCircle2,
   Clock,
   Copy,
   ExternalLink,
@@ -13,7 +12,6 @@ import {
   Lock,
   Plus,
   Shield,
-  Trash2,
   TrendingUp,
   Wallet,
   X,
@@ -55,9 +53,7 @@ export function DashboardClient({
   const handleApprove = async (paymentId: string) => {
     setActionInProgress(paymentId);
     try {
-      const res = await fetch(`/api/v1/payments/${paymentId}/approve`, {
-        method: "POST",
-      });
+      const res = await fetch(`/api/v1/payments/${paymentId}/approve`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
         setPayments((prev) =>
@@ -65,8 +61,11 @@ export function DashboardClient({
             p.id === paymentId ? { ...p, status: "APPROVED", approvedAt: new Date() } : p
           )
         );
-        // Refresh page to recalculate
-        window.location.reload();
+        const approved = payments.find((p) => p.id === paymentId);
+        if (approved) {
+          setTotalEarningsPaise((prev) => prev + approved.amountPaise);
+          setFeesSavedPaise((prev) => prev + Math.round(approved.amountPaise * 0.0236));
+        }
       } else {
         alert(data.error || "Failed to approve payment");
       }
@@ -82,9 +81,7 @@ export function DashboardClient({
     if (!confirm("Are you sure you want to decline this payment claim?")) return;
     setActionInProgress(paymentId);
     try {
-      const res = await fetch(`/api/v1/payments/${paymentId}/decline`, {
-        method: "POST",
-      });
+      const res = await fetch(`/api/v1/payments/${paymentId}/decline`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
         setPayments((prev) =>
@@ -151,7 +148,7 @@ export function DashboardClient({
 
   return (
     <div className="min-h-screen bg-[#f6f9fc] text-[#0d253d] flex flex-col font-normal">
-      {/* Top Navigation */}
+      {/* Top Header */}
       <header className="bg-white border-b border-[#e3e8ee] px-6 py-4 sticky top-0 z-30 stripe-shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -161,26 +158,22 @@ export function DashboardClient({
               </div>
               <span className="font-bold text-lg tracking-tight text-[#0d253d]">PayMe</span>
             </Link>
-
             <span className="text-[#e3e8ee] text-sm">/</span>
-
             <div className="flex items-center gap-1.5 text-xs text-[#64748d]">
-              <span>Freelancer Portal</span>
+              <span>Portal</span>
               <span>•</span>
               <strong className="text-[#0d253d]">{freelancer.name}</strong>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/pay/${freelancer.username}`}
-              target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f6f9fc] border border-[#e3e8ee] hover:border-[#a8c3de] text-xs text-[#273951] font-medium transition-colors"
-            >
-              <span>payme.in/pay/{freelancer.username}</span>
-              <ExternalLink className="w-3.5 h-3.5 text-[#64748d]" />
-            </Link>
-          </div>
+          <Link
+            href={`/pay/${freelancer.username}`}
+            target="_blank"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f6f9fc] border border-[#e3e8ee] hover:border-[#a8c3de] text-xs text-[#273951] font-medium transition-colors"
+          >
+            <span>payme.in/pay/{freelancer.username}</span>
+            <ExternalLink className="w-3.5 h-3.5 text-[#64748d]" />
+          </Link>
         </div>
       </header>
 
@@ -188,7 +181,6 @@ export function DashboardClient({
       <main className="max-w-7xl mx-auto w-full px-6 py-8 flex flex-col gap-6">
         {/* Metric Cards Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Total Volume */}
           <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
               <span>Total Earnings (0% Fees)</span>
@@ -205,7 +197,6 @@ export function DashboardClient({
             </div>
           </div>
 
-          {/* Card 2: PG Fees Saved */}
           <div className="bg-white rounded-xl p-5 border border-[#b9b9f9] stripe-shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#4434d4] text-xs font-medium">
               <span>PG Fees Saved (vs 2.36%)</span>
@@ -221,7 +212,6 @@ export function DashboardClient({
             </div>
           </div>
 
-          {/* Card 3: Active Payment Links */}
           <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
               <span>Active Payment Links</span>
@@ -237,7 +227,6 @@ export function DashboardClient({
             </div>
           </div>
 
-          {/* Card 4: Pending Approvals */}
           <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
               <span>Pending Verifications</span>
@@ -254,7 +243,7 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* Section: Pending Client Payments Requiring 1-Tap Approval */}
+        {/* Pending Client Payments Requiring 1-Tap Approval */}
         {pendingPayments.length > 0 && (
           <div className="bg-amber-50/60 rounded-xl p-6 border border-amber-200 stripe-shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -305,7 +294,7 @@ export function DashboardClient({
                           className="btn-stripe-primary !py-1.5 !px-3 text-xs"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          <span>{actionInProgress === p.id ? "Verifying..." : "Approve"}</span>
+                          <span>{actionInProgress === p.id ? "Approving..." : "Approve"}</span>
                         </button>
                         <button
                           onClick={() => handleDecline(p.id)}
@@ -323,7 +312,7 @@ export function DashboardClient({
           </div>
         )}
 
-        {/* Section: Payment Links & Invoices */}
+        {/* Payment Links & Invoices */}
         <div className="bg-white rounded-xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
@@ -421,7 +410,7 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* Section: Live Verified Payment Ledger */}
+        {/* Live Verified Payment Ledger */}
         <div className="bg-white rounded-xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-light tracking-[-0.26px] text-[#0d253d]">

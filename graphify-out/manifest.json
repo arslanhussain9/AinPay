@@ -1,8 +1,8 @@
 {
   "package.json": {
-    "mtime": 1792420005.6544828,
-    "seen": 1792498326.9032776,
-    "ast_hash": "56076b983be37e6a86f5a7a6384f8af0",
+    "mtime": 1792498483.3705404,
+    "seen": 1792498897.2050195,
+    "ast_hash": "b4e1ab4950bbb6f034e66a4693d4a17a",
     "semantic_hash": ""
   },
   "README.md": {
@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "docs/API_SPEC.md": {
-    "mtime": 1792420005.6426427,
-    "seen": 1792498326.9033704,
-    "ast_hash": "909169c3075cffb6424c32e344f8ba09",
+    "mtime": 1792498848.1658943,
+    "seen": 1792498897.2050583,
+    "ast_hash": "3e81481b8bf95fc7c20b0e803a15d67a",
     "semantic_hash": ""
   },
   "docs/ARCHITECTURE.md": {
@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   "docs/DECISIONS.md": {
-    "mtime": 1792420005.6432464,
-    "seen": 1792498326.9033773,
-    "ast_hash": "b947f3d68dadb1923039c5471d1fac70",
+    "mtime": 1792498835.6109188,
+    "seen": 1792498897.205062,
+    "ast_hash": "2250836f55de91c26565e45e8a9256bf",
     "semantic_hash": ""
   },
   "docs/PRD.md": {
@@ -65,16 +65,10 @@
     "ast_hash": "6baea4a6707fff44656c8c00284c7fe7",
     "semantic_hash": ""
   },
-  "public/quickupi.js": {
-    "mtime": 1792420005.6558897,
-    "seen": 1792498326.9032962,
-    "ast_hash": "1c3faf0af8102b2ee35ce64bd41634b8",
-    "semantic_hash": ""
-  },
   "src/app/(dashboard)/dashboard/DashboardClient.tsx": {
-    "mtime": 1792497911.717106,
-    "seen": 1792498326.9032993,
-    "ast_hash": "5417de95e9e2e212f82b5a2299281d73",
+    "mtime": 1792498825.2887492,
+    "seen": 1792498897.2050297,
+    "ast_hash": "7882a9e14e5d32bad0d6109f0ec07eaa",
     "semantic_hash": ""
   },
   "src/app/(dashboard)/dashboard/page.tsx": {
@@ -90,27 +84,15 @@
     "semantic_hash": ""
   },
   "src/app/layout.tsx": {
-    "mtime": 1792420005.6609879,
-    "seen": 1792498326.903335,
-    "ast_hash": "b1378e9182d3df6982adae236595cca0",
+    "mtime": 1792498500.5009065,
+    "seen": 1792498897.205042,
+    "ast_hash": "9c7536c7e7da8dd82ec35f15031331d0",
     "semantic_hash": ""
   },
   "src/app/page.tsx": {
     "mtime": 1792497955.2549658,
     "seen": 1792498326.903338,
     "ast_hash": "ccd78a4171e54af9ed0bd6eb0014b4f5",
-    "semantic_hash": ""
-  },
-  "src/components/checkout/CountdownTimer.tsx": {
-    "mtime": 1792420005.6619916,
-    "seen": 1792498326.9033403,
-    "ast_hash": "cd1b50952336c3c23939a6a43222ae65",
-    "semantic_hash": ""
-  },
-  "src/components/checkout/LimitsMeter.tsx": {
-    "mtime": 1792420005.6619916,
-    "seen": 1792498326.9033425,
-    "ast_hash": "190f7b3ba70ccdb4a01f500370023388",
     "semantic_hash": ""
   },
   "src/components/checkout/MobileDrawer.tsx": {
@@ -120,15 +102,15 @@
     "semantic_hash": ""
   },
   "src/components/checkout/UtrSubmissionBox.tsx": {
-    "mtime": 1792497861.5292041,
-    "seen": 1792498326.903347,
-    "ast_hash": "ba8b2d703f97cd84ec8c4da24b3ebd85",
+    "mtime": 1792498729.8634095,
+    "seen": 1792498897.205046,
+    "ast_hash": "13c8f85ed0254ff9319b22859e029c7a",
     "semantic_hash": ""
   },
   "src/components/qr/VectorQR.tsx": {
-    "mtime": 1792420005.6629841,
-    "seen": 1792498326.9033492,
-    "ast_hash": "c8be2674eb62170e1a98794c254174db",
+    "mtime": 1792498465.094068,
+    "seen": 1792498897.2050474,
+    "ast_hash": "76acdd4a17c2f66d031d5d0f9cacca06",
     "semantic_hash": ""
   },
   "src/lib/arbiter.ts": {
@@ -167,12 +149,6 @@
     "ast_hash": "81215a79e8a3d84841ac1062c841796e",
     "semantic_hash": ""
   },
-  "public/embed-demo.html": {
-    "mtime": 1792420005.6554806,
-    "seen": 1792498326.9033835,
-    "ast_hash": "876484430391f9cc45b32d08eb371d61",
-    "semantic_hash": ""
-  },
   "stripe-DESIGN.md": {
     "mtime": 1792420005.6659882,
     "seen": 1792498326.9033856,
@@ -186,15 +162,15 @@
     "semantic_hash": ""
   },
   "src/app/(public)/p/[slug]/page.tsx": {
-    "mtime": 1792497830.1101985,
-    "seen": 1792498326.9033053,
-    "ast_hash": "32d858bead0ed3984568af863c1605d5",
+    "mtime": 1792498861.1205707,
+    "seen": 1792498897.2050326,
+    "ast_hash": "08c49cde94303c8ff6b3e1a4ba8bbc93",
     "semantic_hash": ""
   },
   "src/app/(public)/pay/[handle]/FreelancerPageClient.tsx": {
-    "mtime": 1792497786.3632762,
-    "seen": 1792498326.9033203,
-    "ast_hash": "f798664817982324b5f34e65643d04c2",
+    "mtime": 1792498774.7279632,
+    "seen": 1792498897.205034,
+    "ast_hash": "5a0264c0c2c567ee0626364d1af6650b",
     "semantic_hash": ""
   },
   "src/app/api/v1/links/create/route.ts": {

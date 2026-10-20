@@ -140,6 +140,7 @@ export default async function PaymentLinkCheckoutPage({ params }: PageProps) {
                 paymentLinkId={paymentLink.id}
                 freelancerId={freelancer.id}
                 amountPaise={amountPaise}
+                note={paymentLink.title}
               />
             </>
           ) : (
