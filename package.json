@@ -1,7 +1,7 @@
 {
   "name": "payme",
   "version": "1.0.0",
-  "description": "PayMe — The 0% Fee Razorpay.me for Indian Freelancers & Independent Creators",
+  "description": "Direct UPI payment links and project invoices for Indian freelancers with 0% platform fees.",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",

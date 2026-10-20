@@ -329,7 +329,7 @@ export function FreelancerPageClient({
           <Link href="/" className="text-[#533afd] font-medium hover:underline">
             PayMe
           </Link>{" "}
-          • 0% fee sovereign UPI collection for freelancers
+          • Direct UPI payment collection for freelancers
         </footer>
       </div>
     </div>

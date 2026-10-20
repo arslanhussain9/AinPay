@@ -44,7 +44,7 @@ export default function HomePage() {
               For Freelancers
             </Link>
             <Link href="#comparison" className="hover:text-[#533afd] transition-colors">
-              Compare vs Razorpay
+              Why PayMe
             </Link>
             <Link href="/pay/arslan" className="hover:text-[#533afd] transition-colors">
               Live Demo Profile
@@ -73,7 +73,7 @@ export default function HomePage() {
           {/* Eyebrow Pill */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-[#e3e8ee] text-[#4434d4] text-[12px] font-medium mb-8 stripe-shadow-sm backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-[#533afd]" />
-            <span>The 0% fee Razorpay.me built exclusively for Indian Freelancers</span>
+            <span>Direct UPI payment links built for Indian Freelancers</span>
             <ChevronRight className="w-3.5 h-3.5 text-[#64748d]" />
           </div>
 
@@ -257,7 +257,7 @@ export default function HomePage() {
               <thead>
                 <tr className="bg-[#f6f9fc] border-b border-[#e3e8ee] text-[#64748d] text-xs">
                   <th className="py-4 px-6 font-medium">Metric</th>
-                  <th className="py-4 px-6 font-medium">Traditional Gateways (Razorpay/Cashfree)</th>
+                  <th className="py-4 px-6 font-medium">Traditional Payment Gateways</th>
                   <th className="py-4 px-6 font-medium">Sending Raw Phone Number</th>
                   <th className="py-4 px-6 font-medium text-[#533afd]">PayMe</th>
                 </tr>
@@ -307,7 +307,7 @@ export default function HomePage() {
               P
             </div>
             <span className="font-semibold text-[#0d253d]">PayMe</span>
-            <span>— The 0% Fee Razorpay.me for Indian Freelancers.</span>
+            <span>— Direct UPI payment links & milestone invoices for freelancers.</span>
           </div>
 
           <div className="flex items-center gap-6">

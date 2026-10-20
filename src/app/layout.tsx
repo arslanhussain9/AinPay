@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PayMe — The 0% Fee Razorpay.me for Indian Freelancers",
-  description: "Get paid directly to bank over UPI. Zero gateway commissions, instant T+0 settlement, and your own branded payme.in/username link.",
+  title: "PayMe — Direct UPI Payment Links & Invoices for Freelancers",
+  description: "Accept client payments directly into your bank account over UPI. Custom branded payment links, fixed milestone invoices, and 1-tap verification.",
 };
 
 export default function RootLayout({

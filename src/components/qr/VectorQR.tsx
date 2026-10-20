@@ -92,7 +92,7 @@ export function VectorQR({
       {/* Payer Trust Pill */}
       <div className="mt-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f6f9fc] border border-[#e3e8ee] text-[#273951] text-xs font-medium">
         <ShieldCheck className="w-3.5 h-3.5 text-[#533afd]" />
-        <span>Direct NPCI Sovereign Bank Transfer</span>
+        <span>Direct Bank-to-Bank UPI Transfer</span>
       </div>
 
       {/* Actions */}
