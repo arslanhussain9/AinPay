@@ -5,15 +5,15 @@ import { CheckCircle2, Loader2, Send, AlertCircle } from "lucide-react";
 import { validateUTR } from "@/lib/utils";
 
 interface UtrSubmissionBoxProps {
-  sessionId?: string;
-  campaignId: string;
+  paymentLinkId?: string;
+  freelancerId: string;
   amountPaise: number;
   onSuccess?: (utr: string) => void;
 }
 
 export function UtrSubmissionBox({
-  sessionId,
-  campaignId,
+  paymentLinkId,
+  freelancerId,
   amountPaise,
   onSuccess,
 }: UtrSubmissionBoxProps) {
@@ -27,21 +27,21 @@ export function UtrSubmissionBox({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid || loading) return;
+    if (!isValid || !payerName.trim() || loading) return;
 
     setLoading(true);
     setErrorMessage("");
 
     try {
-      const res = await fetch("/api/v1/verify/utr", {
+      const res = await fetch("/api/v1/payments/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId,
-          campaignId,
+          freelancerId,
+          paymentLinkId,
           utr: utrInput.trim(),
           amountPaise,
-          payerName: payerName.trim() || undefined,
+          payerName: payerName.trim(),
         }),
       });
 
@@ -52,9 +52,9 @@ export function UtrSubmissionBox({
         onSuccess?.(utrInput.trim());
       } else {
         setStatus("error");
-        setErrorMessage(data.error?.message || "Failed to submit UTR. Please verify the 12 digits.");
+        setErrorMessage(data.error || "Failed to submit UTR. Please verify the 12 digits.");
       }
-    } catch (err: any) {
+    } catch {
       setStatus("error");
       setErrorMessage("Network error. Please try again.");
     } finally {
@@ -64,14 +64,14 @@ export function UtrSubmissionBox({
 
   if (status === "submitted") {
     return (
-      <div className="w-full p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col items-center text-center gap-1.5">
+      <div className="w-full p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col items-center text-center gap-1.5 animate-fade-in">
         <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-        <h4 className="text-sm font-semibold text-[#0d253d]">UTR Logged Successfully</h4>
+        <h4 className="text-sm font-semibold text-[#0d253d]">Payment Logged Successfully</h4>
         <p className="text-xs text-[#273951]">
           Reference: <span className="font-mono font-medium text-[#533afd]">{utrInput}</span>
         </p>
         <p className="text-[11px] text-[#64748d] mt-1">
-          Your seat is reserved. Waiting for merchant verification or background observer sync.
+          The freelancer will 1-tap verify this payment upon receiving the bank SMS.
         </p>
       </div>
     );
@@ -81,29 +81,31 @@ export function UtrSubmissionBox({
     <div className="w-full flex flex-col gap-2.5 p-4 rounded-xl bg-[#f6f9fc] border border-[#e3e8ee]">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-[#0d253d]">
-          Step 2: Confirm Payment (Mode A)
+          Step 2: Confirm Payment (Enter 12-Digit UTR)
         </span>
         <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-white border border-[#e3e8ee] text-[#64748d] font-mono">
-          Zero-Infra UTR
+          Direct Bank
         </span>
       </div>
 
       <p className="text-xs text-[#64748d]">
-        Paid via UPI? Enter the 12-digit UPI Reference Number / UTR shown on your receipt screen:
+        Paid on GPay / PhonePe? Enter your name and the 12-digit UPI Reference Number (UTR):
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 mt-1">
         <input
           type="text"
+          required
           value={payerName}
           onChange={(e) => setPayerName(e.target.value)}
-          placeholder="Your Full Name (optional)"
+          placeholder="Your Full Name (Client Name)"
           className="w-full px-3 py-2 text-xs rounded-md bg-white border border-[#a8c3de] text-[#0d253d] placeholder-[#64748d] focus:outline-none focus:border-[#533afd] transition-colors"
         />
 
         <div className="relative">
           <input
             type="text"
+            required
             maxLength={12}
             value={utrInput}
             onChange={(e) => {
@@ -132,8 +134,8 @@ export function UtrSubmissionBox({
 
         <button
           type="submit"
-          disabled={!isValid || loading}
-          className="w-full btn-stripe-primary !py-2 text-xs disabled:opacity-50 disabled:pointer-events-none"
+          disabled={!isValid || !payerName.trim() || loading}
+          className="w-full btn-stripe-primary !py-2 text-xs disabled:opacity-50"
         >
           {loading ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />

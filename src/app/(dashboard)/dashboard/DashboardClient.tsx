@@ -1,111 +1,183 @@
 "use client";
 
 import React, { useState } from "react";
-import { formatINR } from "@/lib/utils";
+import { formatINR, rupeesToPaise } from "@/lib/utils";
 import {
   ArrowUpRight,
   Check,
-  ChevronRight,
+  CheckCircle2,
   Clock,
   Copy,
   ExternalLink,
-  Flame,
   Layers,
   Lock,
+  Plus,
   Shield,
-  Smartphone,
+  Trash2,
   TrendingUp,
   Wallet,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 
 interface DashboardClientProps {
-  merchant: any;
-  campaigns: any[];
-  transactions: any[];
-  observerDevice: any;
-  totalVolumePaise: number;
+  freelancer: any;
+  paymentLinks: any[];
+  payments: any[];
+  totalEarningsPaise: number;
   feesSavedPaise: number;
 }
 
 export function DashboardClient({
-  merchant,
-  campaigns: initialCampaigns,
-  transactions: initialTransactions,
-  observerDevice,
-  totalVolumePaise,
-  feesSavedPaise,
+  freelancer,
+  paymentLinks: initialLinks,
+  payments: initialPayments,
+  totalEarningsPaise: initialEarnings,
+  feesSavedPaise: initialFeesSaved,
 }: DashboardClientProps) {
-  const [transactions, setTransactions] = useState(initialTransactions);
-  const [campaigns, setCampaigns] = useState(initialCampaigns);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [payments, setPayments] = useState(initialPayments);
+  const [paymentLinks, setPaymentLinks] = useState(initialLinks);
+  const [totalEarningsPaise, setTotalEarningsPaise] = useState(initialEarnings);
+  const [feesSavedPaise, setFeesSavedPaise] = useState(initialFeesSaved);
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
-  const handleApprove = async (txnId: string) => {
-    setApprovingId(txnId);
+  // New Link Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newSlug, setNewSlug] = useState("");
+  const [newAmountRupees, setNewAmountRupees] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newMaxSlots, setNewMaxSlots] = useState("");
+  const [isCreatingLink, setIsCreatingLink] = useState(false);
+
+  // 1-Tap Approve Payment
+  const handleApprove = async (paymentId: string) => {
+    setActionInProgress(paymentId);
     try {
-      const res = await fetch(`/api/v1/transactions/${txnId}/approve`, {
+      const res = await fetch(`/api/v1/payments/${paymentId}/approve`, {
         method: "POST",
       });
       const data = await res.json();
       if (data.success) {
-        setTransactions((prev) =>
-          prev.map((t) => (t.id === txnId ? { ...t, status: "VERIFIED" } : t))
+        setPayments((prev) =>
+          prev.map((p) =>
+            p.id === paymentId ? { ...p, status: "APPROVED", approvedAt: new Date() } : p
+          )
         );
+        // Refresh page to recalculate
         window.location.reload();
       } else {
-        alert(data.error?.message || "Failed to approve transaction");
+        alert(data.error || "Failed to approve payment");
       }
-    } catch (err) {
-      alert("Network error approving transaction");
+    } catch {
+      alert("Network error approving payment");
     } finally {
-      setApprovingId(null);
+      setActionInProgress(null);
     }
   };
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
+  // 1-Tap Decline Payment
+  const handleDecline = async (paymentId: string) => {
+    if (!confirm("Are you sure you want to decline this payment claim?")) return;
+    setActionInProgress(paymentId);
+    try {
+      const res = await fetch(`/api/v1/payments/${paymentId}/decline`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPayments((prev) =>
+          prev.map((p) => (p.id === paymentId ? { ...p, status: "DECLINED" } : p))
+        );
+      } else {
+        alert(data.error || "Failed to decline payment");
+      }
+    } catch {
+      alert("Network error declining payment");
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  // Create New Payment Link
+  const handleCreateLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newSlug.trim()) return;
+
+    setIsCreatingLink(true);
+    try {
+      const amountPaise = newAmountRupees ? rupeesToPaise(parseFloat(newAmountRupees)) : null;
+      const res = await fetch("/api/v1/links/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          freelancerId: freelancer.id,
+          title: newTitle.trim(),
+          slug: newSlug.trim(),
+          description: newDescription.trim() || undefined,
+          amountPaise,
+          maxSlots: newMaxSlots ? parseInt(newMaxSlots, 10) : undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setPaymentLinks([data.data.paymentLink, ...paymentLinks]);
+        setIsModalOpen(false);
+        setNewTitle("");
+        setNewSlug("");
+        setNewAmountRupees("");
+        setNewDescription("");
+        setNewMaxSlots("");
+      } else {
+        alert(data.error || "Failed to create payment link");
+      }
+    } catch {
+      alert("Network error creating payment link");
+    } finally {
+      setIsCreatingLink(false);
+    }
+  };
+
+  const handleCopy = (url: string, id: string) => {
+    navigator.clipboard.writeText(url);
     setCopiedLink(id);
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
-  const pendingTxns = transactions.filter((t) => t.status === "PENDING");
-  const verifiedTxns = transactions.filter((t) => t.status === "VERIFIED");
+  const pendingPayments = payments.filter((p) => p.status === "PENDING");
+  const approvedPayments = payments.filter((p) => p.status === "APPROVED");
 
   return (
-    <div className="min-h-screen bg-[#f6f9fc] text-[#0d253d] flex flex-col">
-      {/* Top Stripe Chrome Navigation Bar */}
+    <div className="min-h-screen bg-[#f6f9fc] text-[#0d253d] flex flex-col font-normal">
+      {/* Top Navigation */}
       <header className="bg-white border-b border-[#e3e8ee] px-6 py-4 sticky top-0 z-30 stripe-shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-[#533afd] text-white flex items-center justify-center font-bold text-sm">
-                Q
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[#533afd] text-white flex items-center justify-center font-bold text-base shadow-sm">
+                P
               </div>
-              <span className="font-bold text-base text-[#0d253d] tracking-tight">
-                QuickUPI
-              </span>
+              <span className="font-bold text-lg tracking-tight text-[#0d253d]">PayMe</span>
             </Link>
 
             <span className="text-[#e3e8ee] text-sm">/</span>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#0d253d]">
-                {merchant.businessName || merchant.name}
-              </span>
-              <span className="text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded-full bg-[#b9b9f9]/40 text-[#4434d4]">
-                {merchant.tier} Plan
-              </span>
+            <div className="flex items-center gap-1.5 text-xs text-[#64748d]">
+              <span>Freelancer Portal</span>
+              <span>•</span>
+              <strong className="text-[#0d253d]">{freelancer.name}</strong>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <Link
-              href={`/pay/${merchant.handle}`}
+              href={`/pay/${freelancer.username}`}
               target="_blank"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f6f9fc] border border-[#e3e8ee] hover:border-[#a8c3de] text-xs text-[#273951] font-medium transition-colors"
             >
-              <span>quickupi.in/pay/{merchant.handle}</span>
+              <span>payme.in/pay/{freelancer.username}</span>
               <ExternalLink className="w-3.5 h-3.5 text-[#64748d]" />
             </Link>
           </div>
@@ -114,27 +186,27 @@ export function DashboardClient({
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto w-full px-6 py-8 flex flex-col gap-6">
-        {/* Metric Cards Row (Stripe Clean Style) */}
+        {/* Metric Cards Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Total Volume */}
           <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
-              <span>Total Volume Settled</span>
+              <span>Total Earnings (0% Fees)</span>
               <Wallet className="w-4 h-4 text-[#533afd]" />
             </div>
             <div className="mt-3">
               <div className="text-2xl font-normal text-[#0d253d] tabular-money tracking-tight">
-                {formatINR(totalVolumePaise)}
+                {formatINR(totalEarningsPaise)}
               </div>
               <div className="text-xs text-emerald-700 flex items-center gap-1 mt-1 font-medium">
                 <TrendingUp className="w-3.5 h-3.5" />
-                <span>100% Direct to {merchant.vpa}</span>
+                <span>100% Direct into {freelancer.vpa}</span>
               </div>
             </div>
           </div>
 
-          {/* Card 2: Fees Saved (Stripe Primary Highlight) */}
-          <div className="bg-white rounded-xl p-5 border border-[#b9b9f9] stripe-shadow-sm flex flex-col justify-between relative overflow-hidden">
+          {/* Card 2: PG Fees Saved */}
+          <div className="bg-white rounded-xl p-5 border border-[#b9b9f9] stripe-shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#4434d4] text-xs font-medium">
               <span>PG Fees Saved (vs 2.36%)</span>
               <Shield className="w-4 h-4" />
@@ -144,67 +216,56 @@ export function DashboardClient({
                 {formatINR(feesSavedPaise)}
               </div>
               <div className="text-xs text-[#64748d] mt-1 font-light">
-                Zero 2% gateway commission deducted
+                Kept 100% in your pocket
               </div>
             </div>
           </div>
 
-          {/* Card 3: Active Limit Campaigns */}
+          {/* Card 3: Active Payment Links */}
           <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
-              <span>Active Limit QRs</span>
+              <span>Active Payment Links</span>
               <Layers className="w-4 h-4 text-[#533afd]" />
             </div>
             <div className="mt-3">
               <div className="text-2xl font-normal text-[#0d253d] tabular-money tracking-tight">
-                {campaigns.length}
+                {paymentLinks.length}
               </div>
               <div className="text-xs text-[#64748d] mt-1 font-light">
-                Automated cap & seat locks
+                Project milestone invoices & QRs
               </div>
             </div>
           </div>
 
-          {/* Card 4: Observer Device Status */}
+          {/* Card 4: Pending Approvals */}
           <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
-              <span>Android Observer Node</span>
-              <Smartphone className="w-4 h-4 text-[#533afd]" />
+              <span>Pending Verifications</span>
+              <Clock className="w-4 h-4 text-amber-600" />
             </div>
             <div className="mt-3">
-              {observerDevice ? (
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-sm font-semibold text-[#0d253d]">Listening & Active</span>
-                  </div>
-                  <div className="text-xs text-[#64748d] mt-1 flex items-center gap-2 font-light">
-                    <span>{observerDevice.deviceName.split("(")[0]}</span>
-                    <span>• {observerDevice.batteryPct}% batt</span>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-sm font-semibold text-amber-700">Not Paired</div>
-                  <div className="text-xs text-[#64748d] mt-1">Mode A Active (Manual UTR)</div>
-                </div>
-              )}
+              <div className="text-2xl font-normal text-[#0d253d] tabular-money tracking-tight">
+                {pendingPayments.length}
+              </div>
+              <div className="text-xs text-amber-700 mt-1 font-medium">
+                {pendingPayments.length > 0 ? "Requires your 1-tap review" : "All payments verified"}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Section: Pending Verifications (Mode A) */}
-        {pendingTxns.length > 0 && (
-          <div className="bg-amber-50/50 rounded-xl p-6 border border-amber-200 stripe-shadow-sm flex flex-col gap-4">
+        {/* Section: Pending Client Payments Requiring 1-Tap Approval */}
+        {pendingPayments.length > 0 && (
+          <div className="bg-amber-50/60 rounded-xl p-6 border border-amber-200 stripe-shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-600" />
+                <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
                 <h2 className="text-sm font-semibold text-amber-950">
-                  Pending Mode A Verifications ({pendingTxns.length})
+                  Client Payments Awaiting Your 1-Tap Approval ({pendingPayments.length})
                 </h2>
               </div>
               <span className="text-xs text-amber-800">
-                Customer submitted UTR • Tap to approve & decrement slot
+                Check bank SMS on your phone, then tap approve
               </span>
             </div>
 
@@ -212,37 +273,46 @@ export function DashboardClient({
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#e3e8ee] bg-[#f6f9fc] text-[#64748d]">
-                    <th className="py-3 px-4 font-medium">Payer</th>
-                    <th className="py-3 px-4 font-medium">Campaign</th>
+                    <th className="py-3 px-4 font-medium">Client Name</th>
+                    <th className="py-3 px-4 font-medium">Project / Note</th>
                     <th className="py-3 px-4 font-medium">Amount</th>
                     <th className="py-3 px-4 font-medium">12-Digit UTR</th>
-                    <th className="py-3 px-4 font-medium text-right">Action</th>
+                    <th className="py-3 px-4 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e3e8ee]">
-                  {pendingTxns.map((txn) => (
-                    <tr key={txn.id} className="hover:bg-[#f6f9fc]">
+                  {pendingPayments.map((p) => (
+                    <tr key={p.id} className="hover:bg-[#f6f9fc]">
                       <td className="py-3 px-4 font-medium text-[#0d253d]">
-                        {txn.payerName || "Direct Payer"}
-                        {txn.payerPhone && (
-                          <span className="block text-[11px] text-[#64748d] font-normal">{txn.payerPhone}</span>
+                        {p.payerName}
+                        {p.payerPhone && (
+                          <span className="block text-[11px] text-[#64748d] font-normal">{p.payerPhone}</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-[#273951]">{txn.campaign?.title}</td>
-                      <td className="py-3 px-4 font-normal text-[#0d253d] tabular-money">
-                        {formatINR(txn.amountPaise)}
+                      <td className="py-3 px-4 text-[#273951]">
+                        {p.note || p.paymentLink?.title || "Direct payment"}
                       </td>
-                      <td className="py-3 px-4 font-mono text-[#533afd] tracking-wider">
-                        {txn.utrNumber}
+                      <td className="py-3 px-4 font-normal text-[#0d253d] tabular-money font-mono">
+                        {formatINR(p.amountPaise)}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-4 font-mono text-[#533afd] tracking-wider font-medium">
+                        {p.utrNumber}
+                      </td>
+                      <td className="py-3 px-4 text-right space-x-2">
                         <button
-                          onClick={() => handleApprove(txn.id)}
-                          disabled={approvingId === txn.id}
+                          onClick={() => handleApprove(p.id)}
+                          disabled={actionInProgress === p.id}
                           className="btn-stripe-primary !py-1.5 !px-3 text-xs"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          <span>{approvingId === txn.id ? "Approving..." : "1-Tap Approve"}</span>
+                          <span>{actionInProgress === p.id ? "Verifying..." : "Approve"}</span>
+                        </button>
+                        <button
+                          onClick={() => handleDecline(p.id)}
+                          disabled={actionInProgress === p.id}
+                          className="px-2.5 py-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium"
+                        >
+                          Decline
                         </button>
                       </td>
                     </tr>
@@ -253,40 +323,47 @@ export function DashboardClient({
           </div>
         )}
 
-        {/* Section: Smart Limit Campaigns */}
+        {/* Section: Payment Links & Invoices */}
         <div className="bg-white rounded-xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-light tracking-[-0.26px] text-[#0d253d]">
-                Smart Limit Campaigns
+                Your Payment Links & Project Invoices
               </h2>
               <p className="text-xs text-[#64748d] font-light">
-                Reusable QRs with dynamic collection caps and automatic seat locking
+                Share these links with clients to collect deposits, milestones, or service fees.
               </p>
             </div>
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="btn-stripe-primary !py-2 !px-4 text-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Create Payment Link</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {campaigns.map((camp) => {
-              const isLocked =
-                camp.status === "SLOTS_EXHAUSTED" ||
-                camp.status === "CAP_REACHED" ||
-                (camp.maxSlots !== null && camp.usedSlots >= camp.maxSlots);
-              const remaining = camp.maxSlots ? Math.max(0, camp.maxSlots - camp.usedSlots) : null;
-              const publicUrl = `http://localhost:3000/r/${camp.slug}`;
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {paymentLinks.map((link) => {
+              const isClosed =
+                link.status === "CLOSED" ||
+                (link.maxSlots && link.usedSlots >= link.maxSlots);
+              const remaining = link.maxSlots ? Math.max(0, link.maxSlots - link.usedSlots) : null;
+              const publicUrl = `http://localhost:3000/p/${link.slug}`;
 
               return (
                 <div
-                  key={camp.id}
+                  key={link.id}
                   className="p-5 rounded-xl bg-[#f6f9fc] border border-[#e3e8ee] flex flex-col justify-between gap-4"
                 >
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-[#0d253d]">{camp.title}</h3>
-                      {isLocked ? (
+                      <h3 className="text-sm font-semibold text-[#0d253d] line-clamp-1">{link.title}</h3>
+                      {isClosed ? (
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
                           <Lock className="w-2.5 h-2.5" />
-                          Locked
+                          Closed
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#b9b9f9]/40 text-[#4434d4]">
@@ -295,51 +372,42 @@ export function DashboardClient({
                       )}
                     </div>
 
-                    <div className="flex items-baseline gap-2 mt-1">
-                      <span className="text-lg font-normal text-[#0d253d] tabular-money">
-                        {formatINR(camp.amountPaise)}
-                      </span>
-                      <span className="text-xs text-[#64748d] font-light">per transaction lock</span>
-                    </div>
-
-                    {/* Limit progress */}
-                    <div className="mt-2 flex flex-col gap-1">
-                      <div className="flex items-center justify-between text-xs text-[#64748d]">
-                        <span>
-                          Slots: <strong className="text-[#0d253d] tabular-money">{camp.usedSlots}</strong> / {camp.maxSlots}
-                        </span>
-                        <span className={remaining === 0 ? "text-rose-700 font-semibold" : "text-amber-700 font-medium"}>
-                          {remaining !== null ? `${remaining} remaining` : "Unlimited"}
-                        </span>
+                    {link.amountPaise ? (
+                      <div className="text-lg font-normal text-[#0d253d] tabular-money mt-1">
+                        {formatINR(link.amountPaise)}
                       </div>
-                      {camp.maxSlots && (
-                        <div className="w-full h-1.5 rounded-full bg-[#e3e8ee] overflow-hidden">
-                          <div
-                            className={`h-full ${isLocked ? "bg-rose-500" : "bg-[#533afd]"}`}
-                            style={{
-                              width: `${Math.min(100, (camp.usedSlots / camp.maxSlots) * 100)}%`,
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
+                    ) : (
+                      <div className="text-sm text-[#64748d] font-light mt-1">Custom Client Amount</div>
+                    )}
+
+                    {link.description && (
+                      <p className="text-xs text-[#64748d] font-light line-clamp-2 mt-1">
+                        {link.description}
+                      </p>
+                    )}
+
+                    {link.maxSlots && (
+                      <div className="text-[11px] text-amber-700 font-medium mt-1">
+                        Slots: {link.usedSlots} / {link.maxSlots} booked ({remaining} left)
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-[#e3e8ee]">
                     <button
-                      onClick={() => handleCopy(publicUrl, camp.id)}
-                      className="flex items-center gap-1.5 text-xs text-[#64748d] hover:text-[#0d253d] transition-colors"
+                      onClick={() => handleCopy(publicUrl, link.id)}
+                      className="flex items-center gap-1 text-xs text-[#64748d] hover:text-[#0d253d] transition-colors"
                     >
-                      {copiedLink === camp.id ? (
+                      {copiedLink === link.id ? (
                         <Check className="w-3.5 h-3.5 text-emerald-600" />
                       ) : (
                         <Copy className="w-3.5 h-3.5" />
                       )}
-                      <span>{copiedLink === camp.id ? "Link Copied!" : "Copy Checkout Link"}</span>
+                      <span>{copiedLink === link.id ? "Copied!" : "Copy Link"}</span>
                     </button>
 
                     <Link
-                      href={`/r/${camp.slug}`}
+                      href={`/p/${link.slug}`}
                       target="_blank"
                       className="flex items-center gap-1 text-xs text-[#533afd] hover:underline font-medium"
                     >
@@ -353,14 +421,14 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* Section: Live Transaction Ledger (High-Density Stripe Table) */}
+        {/* Section: Live Verified Payment Ledger */}
         <div className="bg-white rounded-xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-light tracking-[-0.26px] text-[#0d253d]">
-              Live Transaction Ledger
+              Approved Payments Ledger
             </h2>
             <span className="text-xs text-[#64748d] tabular-money">
-              {verifiedTxns.length} verified transactions
+              {approvedPayments.length} payments received
             </span>
           </div>
 
@@ -368,43 +436,34 @@ export function DashboardClient({
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#e3e8ee] text-[#64748d]">
-                  <th className="pb-3 font-medium">Timestamp</th>
-                  <th className="pb-3 font-medium">Payer</th>
+                  <th className="pb-3 font-medium">Date</th>
+                  <th className="pb-3 font-medium">Client</th>
+                  <th className="pb-3 font-medium">Invoice / Note</th>
                   <th className="pb-3 font-medium">Amount</th>
-                  <th className="pb-3 font-medium">Mode</th>
                   <th className="pb-3 font-medium">12-Digit UTR</th>
                   <th className="pb-3 font-medium text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e3e8ee]">
-                {transactions.map((txn) => (
-                  <tr key={txn.id} className="hover:bg-[#f6f9fc]">
+                {approvedPayments.map((p) => (
+                  <tr key={p.id} className="hover:bg-[#f6f9fc]">
                     <td className="py-3 text-[#64748d] font-mono text-[11px]">
-                      {new Date(txn.createdAt).toLocaleTimeString()}
+                      {new Date(p.createdAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                     </td>
-                    <td className="py-3 text-[#0d253d] font-medium">
-                      {txn.payerName || "Direct UPI Payer"}
-                    </td>
-                    <td className="py-3 font-normal text-[#0d253d] tabular-money">
-                      {formatINR(txn.amountPaise)}
-                    </td>
-                    <td className="py-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#f6f9fc] border border-[#e3e8ee] text-[#273951]">
-                        {txn.verificationMode}
-                      </span>
+                    <td className="py-3 text-[#0d253d] font-medium">{p.payerName}</td>
+                    <td className="py-3 text-[#273951]">{p.note || p.paymentLink?.title || "Direct payment"}</td>
+                    <td className="py-3 font-normal text-[#0d253d] tabular-money font-mono">
+                      {formatINR(p.amountPaise)}
                     </td>
                     <td className="py-3 font-mono text-[#533afd] tracking-wider">
-                      {txn.utrNumber || "—"}
+                      {p.utrNumber}
                     </td>
                     <td className="py-3 text-right">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                          txn.status === "VERIFIED"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-amber-50 text-amber-800 border border-amber-200"
-                        }`}
-                      >
-                        {txn.status}
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Credited T+0
                       </span>
                     </td>
                   </tr>
@@ -414,6 +473,106 @@ export function DashboardClient({
           </div>
         </div>
       </main>
+
+      {/* Modal: Create New Payment Link */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#0d253d]/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#e3e8ee] w-full max-w-md p-6 stripe-shadow-lg animate-fade-in relative">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e3e8ee]">
+              <h3 className="text-sm font-semibold text-[#0d253d]">
+                Create New Project Payment Link
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-[#64748d] hover:text-[#0d253d]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateLink} className="flex flex-col gap-3.5 mt-4">
+              <div>
+                <label className="text-xs text-[#64748d] mb-1 block">Title / Project Milestone</label>
+                <input
+                  type="text"
+                  required
+                  value={newTitle}
+                  onChange={(e) => {
+                    setNewTitle(e.target.value);
+                    if (!newSlug) {
+                      setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"));
+                    }
+                  }}
+                  placeholder="e.g. Website Design 50% Advance"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#64748d] mb-1 block">URL Slug (`payme.in/p/...`)</label>
+                <input
+                  type="text"
+                  required
+                  value={newSlug}
+                  onChange={(e) => setNewSlug(e.target.value)}
+                  placeholder="e.g. website-advance"
+                  className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#64748d] mb-1 block">Amount in INR (leave blank for open custom amount)</label>
+                <input
+                  type="number"
+                  value={newAmountRupees}
+                  onChange={(e) => setNewAmountRupees(e.target.value)}
+                  placeholder="e.g. 15000"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#64748d] mb-1 block">Max Bookings / Slots (Optional)</label>
+                <input
+                  type="number"
+                  value={newMaxSlots}
+                  onChange={(e) => setNewMaxSlots(e.target.value)}
+                  placeholder="e.g. 5 (leave blank for unlimited)"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#64748d] mb-1 block">Description (Optional)</label>
+                <textarea
+                  rows={2}
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Deliverables or terms for this milestone..."
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-3.5 py-2 text-xs text-[#64748d] hover:text-[#0d253d]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingLink}
+                  className="btn-stripe-primary !py-2 !px-4 text-xs"
+                >
+                  <span>{isCreatingLink ? "Creating..." : "Create Link"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

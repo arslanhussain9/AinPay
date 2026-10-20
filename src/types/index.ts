@@ -1,34 +1,6 @@
-export type MerchantTier = "FREE" | "PRO" | "BUSINESS";
+export type PaymentStatus = "PENDING" | "APPROVED" | "DECLINED";
 
-export type CampaignStatus = 
-  | "ACTIVE" 
-  | "PAUSED" 
-  | "SLOTS_EXHAUSTED" 
-  | "CAP_REACHED" 
-  | "EXPIRED";
-
-export type SessionStatus = 
-  | "AWAITING_PAYMENT" 
-  | "UTR_SUBMITTED" 
-  | "VERIFIED" 
-  | "EXPIRED" 
-  | "OVERSUBSCRIBED";
-
-export type TransactionStatus = 
-  | "PENDING" 
-  | "VERIFIED" 
-  | "REJECTED" 
-  | "EXPIRED" 
-  | "AMOUNT_MISMATCH" 
-  | "OVERSUBSCRIBED_REFUND_DUE";
-
-export type VerificationMode = 
-  | "MANUAL_UTR" 
-  | "OBSERVER_SMS" 
-  | "OBSERVER_NOTIFICATION" 
-  | "MICRO_PAISE_MATCH";
-
-export type DeviceStatus = "ONLINE" | "OFFLINE";
+export type LinkStatus = "ACTIVE" | "PAUSED" | "CLOSED";
 
 export interface UPIIntentParams {
   vpa: string;
@@ -38,17 +10,17 @@ export interface UPIIntentParams {
   note?: string;
 }
 
-export interface LimitCheckResult {
-  allowed: boolean;
-  reason?: "SLOTS_EXHAUSTED" | "CAP_REACHED" | "CAMPAIGN_EXPIRED" | "CAMPAIGN_PAUSED";
-  remainingSlots?: number | null;
-  remainingCapPaise?: number | null;
-}
-
-export interface BankSMSParsedData {
-  bank: string;
-  amountPaise: number;
-  utr: string;
-  accountEnding?: string;
-  rawText: string;
+export interface FreelancerProfileDTO {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  mobile?: string | null;
+  vpa: string;
+  title?: string | null;
+  bio?: string | null;
+  avatarUrl?: string | null;
+  twitter?: string | null;
+  github?: string | null;
+  linkedin?: string | null;
 }

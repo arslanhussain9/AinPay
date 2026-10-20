@@ -1,0 +1,419 @@
+"use client";
+
+import React, { useState } from "react";
+import { formatINR, buildUPIUri, validateUTR } from "@/lib/utils";
+import { VectorQR } from "@/components/qr/VectorQR";
+import { MobileDrawer } from "@/components/checkout/MobileDrawer";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronRight,
+  Globe,
+  Lock,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
+
+interface FreelancerPageClientProps {
+  freelancer: any;
+  paymentLinks: any[];
+}
+
+export function FreelancerPageClient({
+  freelancer,
+  paymentLinks,
+}: FreelancerPageClientProps) {
+  // Quick Custom Amount Pay State
+  const [selectedPreset, setSelectedPreset] = useState<number>(1500);
+  const [customAmountRupees, setCustomAmountRupees] = useState<string>("1500");
+  const [clientName, setClientName] = useState<string>("");
+  const [clientNote, setClientNote] = useState<string>("");
+  const [clientUtr, setClientUtr] = useState<string>("");
+  const [payStep, setPayStep] = useState<"SELECT" | "PAY_QR" | "SUCCESS">("SELECT");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
+
+  const presets = [500, 1500, 5000, 10000];
+
+  const currentAmountRupees = parseInt(customAmountRupees, 10) || 0;
+  const currentAmountPaise = currentAmountRupees * 100;
+
+  const upiUri = buildUPIUri({
+    vpa: freelancer.vpa,
+    name: freelancer.name,
+    amountPaise: currentAmountPaise > 0 ? currentAmountPaise : 10000,
+    transactionRef: `PM_${Date.now().toString().slice(-6)}`,
+    note: clientNote || `Payment to ${freelancer.name}`,
+  });
+
+  const handleStartPay = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentAmountRupees < 1) {
+      setErrorMsg("Please enter an amount of at least ₹1");
+      return;
+    }
+    setErrorMsg("");
+    setPayStep("PAY_QR");
+  };
+
+  const handleConfirmUtr = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateUTR(clientUtr)) {
+      setErrorMsg("Please enter a valid 12-digit UPI reference number (UTR).");
+      return;
+    }
+    if (!clientName.trim()) {
+      setErrorMsg("Please enter your name.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/v1/payments/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          freelancerId: freelancer.id,
+          payerName: clientName.trim(),
+          amountPaise: currentAmountPaise,
+          utr: clientUtr.trim(),
+          note: clientNote.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setPayStep("SUCCESS");
+      } else {
+        setErrorMsg(data.error || "Failed to submit payment. Please verify your UTR.");
+      }
+    } catch {
+      setErrorMsg("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f6f9fc] text-[#0d253d] flex flex-col items-center p-4 sm:p-6 lg:p-12 font-normal">
+      {/* Top subtle atmospheric gradient sheen */}
+      <div className="fixed top-0 left-0 w-full h-64 bg-gradient-to-b from-[#b9b9f9]/20 via-[#f5e9d4]/20 to-transparent pointer-events-none" />
+
+      <div className="w-full max-w-xl z-10 flex flex-col gap-6">
+        {/* Profile Card (Stripe / Razorpay.me Clean Style) */}
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e3e8ee] stripe-shadow-md flex flex-col items-center text-center relative overflow-hidden">
+          {/* Avatar with gradient border */}
+          <div className="w-20 h-20 rounded-2xl bg-[#533afd] text-white flex items-center justify-center font-bold text-3xl shadow-sm mb-4">
+            {freelancer.name.slice(0, 2).toUpperCase()}
+          </div>
+
+          <div className="flex items-center gap-1.5 justify-center">
+            <h1 className="text-2xl font-light tracking-[-0.64px] text-[#0d253d]">
+              {freelancer.name}
+            </h1>
+            <CheckCircle2 className="w-5 h-5 text-[#533afd]" />
+          </div>
+
+          {freelancer.title && (
+            <p className="text-xs sm:text-sm font-medium text-[#533afd] mt-0.5">
+              {freelancer.title}
+            </p>
+          )}
+
+          {freelancer.bio && (
+            <p className="text-xs text-[#64748d] font-light max-w-md mt-2.5 leading-relaxed">
+              {freelancer.bio}
+            </p>
+          )}
+
+          {/* Trust Badges */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
+            <span className="px-3 py-1 rounded-full bg-[#f6f9fc] border border-[#e3e8ee] text-[#273951] font-medium flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#533afd]" />
+              <span>UPI: <strong className="font-mono text-[#0d253d]">{freelancer.vpa}</strong></span>
+            </span>
+            <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-medium">
+              0% Fee Direct Bank Rail
+            </span>
+          </div>
+
+          {/* Social Links */}
+          <div className="mt-4 flex items-center gap-4 text-xs text-[#64748d]">
+            {freelancer.twitter && (
+              <a href={freelancer.twitter} target="_blank" rel="noreferrer" className="hover:text-[#533afd]">
+                Twitter
+              </a>
+            )}
+            {freelancer.github && (
+              <a href={freelancer.github} target="_blank" rel="noreferrer" className="hover:text-[#533afd]">
+                GitHub
+              </a>
+            )}
+            {freelancer.linkedin && (
+              <a href={freelancer.linkedin} target="_blank" rel="noreferrer" className="hover:text-[#533afd]">
+                LinkedIn
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Pay Box (Custom Amount / Tip / Project Deposit) */}
+        <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#e3e8ee] stripe-shadow-md flex flex-col gap-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#e3e8ee]">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#533afd]" />
+              <h2 className="text-sm font-semibold text-[#0d253d]">
+                Quick Direct Payment to {freelancer.name.split(" ")[0]}
+              </h2>
+            </div>
+            <span className="text-[11px] text-[#64748d]">Instant T+0</span>
+          </div>
+
+          {payStep === "SELECT" && (
+            <form onSubmit={handleStartPay} className="flex flex-col gap-4">
+              {/* Presets Pills */}
+              <div>
+                <label className="text-xs text-[#64748d] mb-1.5 block">Select or Enter Amount:</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {presets.map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPreset(amt);
+                        setCustomAmountRupees(amt.toString());
+                      }}
+                      className={`py-2 rounded-lg text-xs font-semibold tabular-money transition-all ${
+                        selectedPreset === amt
+                          ? "bg-[#533afd] text-white shadow-sm"
+                          : "bg-[#f6f9fc] hover:bg-[#e3e8ee] text-[#273951] border border-[#e3e8ee]"
+                      }`}
+                    >
+                      ₹{amt.toLocaleString("en-IN")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Amount Input */}
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-lg font-semibold text-[#64748d]">₹</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={customAmountRupees}
+                  onChange={(e) => {
+                    setCustomAmountRupees(e.target.value);
+                    setSelectedPreset(0);
+                  }}
+                  placeholder="Enter custom amount"
+                  className="w-full pl-8 pr-4 py-2.5 rounded-lg border border-[#a8c3de] text-lg font-normal tabular-money text-[#0d253d] focus:outline-none focus:border-[#533afd] transition-colors"
+                />
+              </div>
+
+              {/* Client Note */}
+              <input
+                type="text"
+                value={clientNote}
+                onChange={(e) => setClientNote(e.target.value)}
+                placeholder="What is this payment for? (e.g. Website advance, Coffee)"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+              />
+
+              {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
+
+              <button type="submit" className="w-full btn-stripe-primary !py-2.5 text-xs">
+                <span>Proceed to Pay {formatINR(currentAmountPaise)}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          )}
+
+          {payStep === "PAY_QR" && (
+            <div className="flex flex-col gap-4 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#64748d]">
+                  Paying <strong className="text-[#0d253d] font-semibold">{formatINR(currentAmountPaise)}</strong>
+                </span>
+                <button
+                  onClick={() => setPayStep("SELECT")}
+                  className="text-xs text-[#533afd] hover:underline"
+                >
+                  Change Amount
+                </button>
+              </div>
+
+              {/* Desktop Vector SVG QR */}
+              <div className="hidden sm:flex flex-col items-center">
+                <VectorQR
+                  upiUri={upiUri}
+                  payeeName={freelancer.name}
+                  amountFormatted={formatINR(currentAmountPaise)}
+                  size={200}
+                />
+              </div>
+
+              {/* Mobile 1-Tap Drawer */}
+              <div className="sm:hidden w-full">
+                <MobileDrawer
+                  upiUri={upiUri}
+                  amountFormatted={formatINR(currentAmountPaise)}
+                  payeeName={freelancer.name}
+                />
+              </div>
+
+              {/* UTR Confirmation Form */}
+              <form onSubmit={handleConfirmUtr} className="pt-3 border-t border-[#e3e8ee] flex flex-col gap-2.5">
+                <span className="text-xs font-semibold text-[#0d253d]">
+                  Confirm Payment (Enter 12-Digit UTR):
+                </span>
+
+                <input
+                  type="text"
+                  required
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Your Full Name"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                />
+
+                <input
+                  type="text"
+                  required
+                  maxLength={12}
+                  value={clientUtr}
+                  onChange={(e) => setClientUtr(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Enter 12-digit UTR from GPay / PhonePe"
+                  className="w-full px-3 py-2 text-xs font-mono tracking-widest rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                />
+
+                {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || clientUtr.length !== 12}
+                  className="w-full btn-stripe-primary !py-2 text-xs disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isSubmitting ? "Submitting..." : "Submit UTR for Verification"}</span>
+                </button>
+              </form>
+            </div>
+          )}
+
+          {payStep === "SUCCESS" && (
+            <div className="p-6 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col items-center text-center gap-2 animate-fade-in">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+              <h3 className="text-sm font-semibold text-[#0d253d]">Payment Logged Successfully!</h3>
+              <p className="text-xs text-[#273951]">
+                Amount: <strong className="tabular-money">{formatINR(currentAmountPaise)}</strong> • UTR:{" "}
+                <span className="font-mono text-[#533afd] font-semibold">{clientUtr}</span>
+              </p>
+              <p className="text-[11px] text-[#64748d]">
+                {freelancer.name} will verify and confirm your payment in their dashboard.
+              </p>
+              <button
+                onClick={() => {
+                  setPayStep("SELECT");
+                  setClientUtr("");
+                }}
+                className="mt-2 text-xs text-[#533afd] hover:underline font-medium"
+              >
+                Send Another Payment →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Listed Services & Payment Links */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-semibold text-[#0d253d]">
+              Fixed Services & Project Invoices
+            </h2>
+            <span className="text-xs text-[#64748d]">
+              {paymentLinks.length} active
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {paymentLinks.map((link) => {
+              const isClosed = link.status === "CLOSED" || (link.maxSlots && link.usedSlots >= link.maxSlots);
+              const remaining = link.maxSlots ? Math.max(0, link.maxSlots - link.usedSlots) : null;
+
+              return (
+                <div
+                  key={link.id}
+                  className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div className="flex flex-col gap-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-[#0d253d]">{link.title}</h3>
+                      {isClosed ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" />
+                          Sold Out
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#b9b9f9]/40 text-[#4434d4]">
+                          Available
+                        </span>
+                      )}
+                    </div>
+
+                    {link.description && (
+                      <p className="text-xs text-[#64748d] font-light line-clamp-2">
+                        {link.description}
+                      </p>
+                    )}
+
+                    {remaining !== null && (
+                      <div className="flex items-center gap-1 text-xs text-amber-700 font-medium mt-1">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>
+                          {isClosed ? "All slots filled" : `Only ${remaining} of ${link.maxSlots} slots remaining!`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-[#e3e8ee]">
+                    {link.amountPaise && (
+                      <div className="text-base font-normal text-[#0d253d] tabular-money">
+                        {formatINR(link.amountPaise)}
+                      </div>
+                    )}
+
+                    <Link
+                      href={`/p/${link.slug}`}
+                      className={`!py-2 !px-4 text-xs ${
+                        isClosed ? "btn-stripe-secondary" : "btn-stripe-primary"
+                      }`}
+                    >
+                      <span>{isClosed ? "View Details" : "Pay Milestone"}</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="text-center text-xs text-[#64748d] pt-6 border-t border-[#e3e8ee]">
+          Powered by{" "}
+          <Link href="/" className="text-[#533afd] font-medium hover:underline">
+            PayMe
+          </Link>{" "}
+          • 0% fee sovereign UPI collection for freelancers
+        </footer>
+      </div>
+    </div>
+  );
+}

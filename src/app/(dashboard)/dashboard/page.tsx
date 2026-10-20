@@ -6,39 +6,35 @@ import { DashboardClient } from "./DashboardClient";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  // Demo uses merchant 'arslan'
-  const merchant = await prisma.merchant.findUnique({
-    where: { handle: "arslan" },
+  // Demo uses freelancer 'arslan'
+  const freelancer = await prisma.freelancer.findUnique({
+    where: { username: "arslan" },
     include: {
-      campaigns: {
+      paymentLinks: {
         orderBy: { createdAt: "desc" },
       },
-      transactions: {
+      payments: {
         orderBy: { createdAt: "desc" },
-        include: { campaign: true },
-      },
-      observerDevices: {
-        take: 1,
+        include: { paymentLink: true },
       },
     },
   });
 
-  if (!merchant) {
+  if (!freelancer) {
     notFound();
   }
 
-  // Calculate volume & fees saved (2.36% MDR)
-  const verifiedTxns = merchant.transactions.filter((t) => t.status === "VERIFIED");
-  const totalVolumePaise = verifiedTxns.reduce((acc, t) => acc + t.amountPaise, 0);
-  const feesSavedPaise = Math.round(totalVolumePaise * 0.0236);
+  // Calculate volume & fees saved (2.36% standard PG fee)
+  const approvedPayments = freelancer.payments.filter((p) => p.status === "APPROVED");
+  const totalEarningsPaise = approvedPayments.reduce((acc, p) => acc + p.amountPaise, 0);
+  const feesSavedPaise = Math.round(totalEarningsPaise * 0.0236);
 
   return (
     <DashboardClient
-      merchant={merchant}
-      campaigns={merchant.campaigns}
-      transactions={merchant.transactions}
-      observerDevice={merchant.observerDevices[0] || null}
-      totalVolumePaise={totalVolumePaise}
+      freelancer={freelancer}
+      paymentLinks={freelancer.paymentLinks}
+      payments={freelancer.payments}
+      totalEarningsPaise={totalEarningsPaise}
       feesSavedPaise={feesSavedPaise}
     />
   );

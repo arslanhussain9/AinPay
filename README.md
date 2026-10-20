@@ -1,19 +1,19 @@
-# QuickUPI (PayMe)
+# PayMe
 
 <div align="center">
 
 ```
-██████╗ ██╗   ██╗██╗ ██████╗██╗  ██╗██╗   ██╗██████╗ ██╗
-██╔═══██╗██║   ██║██║██╔════╝██║ ██╔╝██║   ██║██╔══██╗██║
-██║   ██║██║   ██║██║██║     █████╔╝ ██║   ██║██████╔╝██║
-██║▄▄ ██║██║   ██║██║██║     ██╔═██╗ ██║   ██║██╔═══╝ ██║
-╚██████╔╝╚██████╔╝██║╚██████╗██║  ██╗╚██████╔╝██║     ██║
- ╚══▀▀═╝  ╚═════╝ ╚═╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝
+██████╗  █████╗ ██╗   ██╗███╗   ███╗███████╗
+██╔══██╗██╔══██╗╚██╗ ██╔╝████╗ ████║██╔════╝
+██████╔╝███████║ ╚████╔╝ ██╔████╔██║█████╗  
+██╔═══╝ ██╔══██║  ╚██╔╝  ██║╚██╔╝██║██╔══╝  
+██║     ██║  ██║   ██║   ██║ ╚═╝ ██║███████╗
+╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝╚══════╝
 ```
 
-### **"Don't build a payment gateway. Make existing UPI 10x smarter."**
+### **The 0% Fee Razorpay.me for Indian Freelancers & Creators**
 
-**0% Gateway Fees • Direct-to-Bank T+0 Instant Settlement • Zero RBI Escrow Liability**
+**0% Gateway Fees • Direct-to-Bank T+0 Instant Settlement • Branded Mini-Websites**
 
 [![Node.js](https://img.shields.io/badge/Node.js-v20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
@@ -25,94 +25,70 @@
 
 ---
 
-## ⚡ The QuickUPI Revolution
+## ⚡ The Problem vs PayMe
 
-Traditional Payment Gateways (Razorpay, Cashfree, Stripe) lock your revenue into **2% to 3% transaction fees (+18% GST)**, hold funds for **T+2 to T+3 business days**, and require complex **RBI Payment Aggregator (PA/PG) licenses** with ₹15–25 Cr capital requirements.
+Freelancers in India (designers, developers, consultants, writers) face two bad choices when collecting payments:
 
-**QuickUPI** is a sovereign payment orchestration layer built directly atop India's UPI rails:
+1. **Traditional Payment Gateways (Razorpay, Cashfree):**
+   * Cut **2.0% – 3.0% + 18% GST** from your hard-earned project invoices (losing ₹1,200 on a ₹50,000 milestone!).
+   * Hold your money for T+2 to T+3 business days.
+   * Require tedious business KYC.
+2. **Sending a Raw Phone Number on WhatsApp:**
+   * Looks amateurish and untrustworthy.
+   * Client has to manually type amounts and send screenshots.
+   * No project milestone records.
 
-| Feature | Traditional Gateways | Static UPI Stickers | QuickUPI |
-| :--- | :---: | :---: | :---: |
-| **Transaction Fees** | 2.0% – 3.0% + GST | 0% | **0.0% (Zero Fees Forever)** |
-| **Settlement Time** | T+2 to T+3 Days | Instant | **Instant T+0 Direct-to-Bank** |
-| **RBI Escrow Liability** | Mandatory (₹15–25 Cr) | None | **Zero (Funds Never Touched)** |
-| **Automated Limits (Cap/Slots)** | Paid SaaS Add-on | ❌ None | **Built-in Atomic Limits** |
-| **Verification Mesh** | Proprietary Webhooks | ❌ WhatsApp Screenshot | **3-Tier Mesh (UTR, Observer, Paise)** |
-| **Universal Embed** | JS SDK | ❌ None | **2-Line Drop-in (`quickupi.js`)** |
-
----
-
-## 📚 Complete Documentation Hub
-
-Detailed architectural blueprints, design rationale, and specifications are maintained in the [`docs/`](file:///d:/PayMe/docs/) directory:
-
-| Document | Description |
-| :--- | :--- |
-| **[`PRD.md`](file:///d:/PayMe/docs/PRD.md)** | **Product Requirements Document:** Executive vision, user personas, core features, acceptance criteria, and monetization model. |
-| **[`DECISIONS.md`](file:///d:/PayMe/docs/DECISIONS.md)** | **Architecture Decision Records (ADRs):** Comprehensive decision logs (Sovereign settlement, minor units in paise, hybrid mesh, atomic limits, etc.). |
-| **[`ARCHITECTURE.md`](file:///d:/PayMe/docs/ARCHITECTURE.md)** | **System Architecture & Technical Specs:** High-level flow, atomic limits arbiter, vector QR engine, mobile intent architecture, and threat model. |
-| **[`VERIFICATION_MESH.md`](file:///d:/PayMe/docs/VERIFICATION_MESH.md)** | **Hybrid Verification Mesh:** Mode A (Zero-Infra UTR), Mode B (Android Observer Node & HMAC), Mode C (Micro-Paise Disambiguation), and Multi-Bank Regex. |
-| **[`API_SPEC.md`](file:///d:/PayMe/docs/API_SPEC.md)** | **REST API & Universal Embed SDK (`quickupi.js`):** Public checkout APIs, observer endpoints, merchant API, and iframe postMessage spec. |
-| **[`DATABASE_SCHEMA.md`](file:///d:/PayMe/docs/DATABASE_SCHEMA.md)** | **Database Models & Concurrency:** ER diagram, complete Prisma schema, field constraints, indexes, and atomic state transition queries. |
-| **[`ROADMAP.md`](file:///d:/PayMe/docs/ROADMAP.md)** | **Milestones & Execution Checklist:** Phased development plan from database setup to the universal SDK embed. |
+### The PayMe Solution:
+Every freelancer gets their own professional **`payme.in/username`** link with a Stripe-level aesthetic:
+* **Custom Amount Quick Pay:** Client can type any amount or pick presets (₹500, ₹1,500, ₹5,000, ₹10,000).
+* **Project Milestone Invoices:** Send locked amount links (e.g. ₹25,000 for SaaS Advance).
+* **1-Tap Mobile Drawer:** Opens Google Pay, PhonePe, Paytm, or CRED pre-filled with the exact amount.
+* **1-Tap Portal Approval:** Client logs their 12-digit UTR. When your bank sends you the SMS, tap **[Approve ✅]** on your dashboard.
+* **100% Direct-to-Bank:** Money lands straight in your bank account over NPCI UPI rails at 0% fees.
 
 ---
 
-## 🌟 Hero Features
+## 🎨 Stripe Design Aesthetic
 
-### 1. Reusable QR with Automated Limits
-- **Total Collection Cap:** e.g., collect maximum ₹50,000 for a campaign. Once reached, page deactivates automatically.
-- **Per-Payment Lock:** Fixed amount (e.g. ₹2,000) locked in the UPI intent.
-- **Slot Limits:** e.g., only 25 seats. Automatically locks with *"All slots booked"* upon the 25th payment.
-- **Dynamic Expiry:** Server-authoritative countdown timer.
-
-### 2. Tri-Channel Verification Mesh
-- **Mode A (Zero-Infra):** Customer pays ➔ Enters 12-digit UTR ➔ Merchant 1-tap approves on dashboard. (100% Free).
-- **Mode B (Automated Observer Node):** Lightweight Android companion APK reads bank SMS / push notifications and posts an HMAC-SHA256 signed webhook for instant auto-confirmation.
-- **Mode C (Dynamic Micro-Paise):** Assigns unique temporary sub-rupee variations (e.g., ₹2000.12, ₹2000.27) to disambiguate concurrent payers without a single-slot line.
-
-### 3. Omnichannel Payer Experience
-- **Desktop:** Crisp vector SVG QR code with live countdown timer and slot progress bar.
-- **Mobile:** 1-Tap bottom drawer with direct deep-links for **Google Pay**, **PhonePe**, **Paytm**, **CRED**, and **BHIM**.
-- **Branded Vanity Handles:** `quickupi.in/pay/arslan`.
-
-### 4. Universal Embed (`quickupi.js`)
-2-line drop-in script for any external website:
-```html
-<script src="https://quickupi.in/quickupi.js" data-merchant-key="pk_live_..."></script>
-<button data-quickupi-pay data-campaign="cohort-5" data-amount="2499">
-  Enroll Now (0% Fee UPI)
-</button>
-```
+Built strictly following modern financial infrastructure design principles:
+* **Atmospheric Gradient Mesh:** Pastel cream, lavender, electric indigo (`#533afd`), and ruby accents.
+* **Editorial Typography:** Inter / Sohne weight 300 display headlines with negative letter-spacing (`-1.4px`).
+* **Tabular Numeric Figures (`tnum`):** All currency amounts rendered with monospace tabular figures for financial accuracy.
+* **Single-Indigo CTA Hierarchy:** Pill-shaped buttons (`btn-stripe-primary`) with hairline borders and subtle elevation shadows.
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Live Demo Routes (`http://localhost:3000`)
 
-* **Framework:** [Next.js 14](https://nextjs.org) (App Router, Server Actions, API routes)
-* **Language:** TypeScript 5.6
-* **Database & ORM:** [Prisma](https://prisma.io) with SQLite (Local) / PostgreSQL (Cloud)
-* **Styling:** [Tailwind CSS](https://tailwindcss.com) + Lucide Icons (Dark slate fintech aesthetic)
+| Page | URL | Description |
+| :--- | :--- | :--- |
+| **🏠 Homepage** | [`/`](http://localhost:3000) | Marketing landing page explaining the 0% fee freelancer model. |
+| **👤 Freelancer Profile** | [`/pay/arslan`](http://localhost:3000/pay/arslan) | Arslan's personal page with bio, Quick Pay box, and listed project links. |
+| **📄 Project Invoice** | [`/p/website-advance`](http://localhost:3000/p/website-advance) | Dedicated ₹25,000 milestone invoice checkout with Vector QR and UTR input. |
+| **📊 Freelancer Dashboard** | [`/dashboard`](http://localhost:3000/dashboard) | Live earnings tally, fees saved counter, 1-tap payment approvals, and link creator. |
+
+---
+
+## 🛠️ Tech Stack & Setup
+
+* **Framework:** Next.js 14 (App Router, Server Actions, API routes)
+* **Styling:** Tailwind CSS + Stripe design tokens
+* **Database:** Prisma ORM with SQLite (`dev.db`)
 * **QR Engine:** ISO/IEC 18004 Scalable Vector SVG
-* **Security:** Strict 64-bit integer paise arithmetic, HMAC-SHA256 Observer authentication
+* **Currency Math:** Strict 64-bit integer paise (no floating-point rounding bugs)
 
----
-
-## 🚀 Getting Started
-
-### 1. Install Dependencies
+### Quickstart:
 ```bash
+# 1. Install dependencies
 npm.cmd install
-```
 
-### 2. Setup Database & Prisma
-```bash
-npm.cmd run prisma:generate
+# 2. Push schema to database
 npm.cmd run prisma:push
-```
 
-### 3. Start Development Server
-```bash
+# 3. Seed demo data
+npx.cmd ts-node prisma/seed.ts
+
+# 4. Start dev server
 npm.cmd run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.

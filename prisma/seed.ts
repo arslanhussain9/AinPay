@@ -3,132 +3,116 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding QuickUPI database...");
+  console.log("Seeding PayMe Freelancer Database...");
 
-  // Clean existing records
-  await prisma.transaction.deleteMany();
-  await prisma.microPaiseLease.deleteMany();
-  await prisma.paymentSession.deleteMany();
-  await prisma.paymentCampaign.deleteMany();
-  await prisma.observerDevice.deleteMany();
-  await prisma.merchant.deleteMany();
+  // Clean existing tables
+  await prisma.payment.deleteMany();
+  await prisma.paymentLink.deleteMany();
+  await prisma.freelancer.deleteMany();
 
-  // Create demo merchant
-  const merchant = await prisma.merchant.create({
+  // Create primary freelancer profile
+  const freelancer = await prisma.freelancer.create({
     data: {
-      email: "arslan@example.com",
-      passwordHash: "demo_hash_quickupi",
+      username: "arslan",
       name: "Arslan Ahmad",
-      businessName: "Arslan Tech & Design Labs",
-      handle: "arslan",
+      email: "arslan@example.com",
+      mobile: "+91 98765 43210",
       vpa: "arslan@okhdfcbank",
-      tier: "PRO",
-      publishableKey: "pk_live_quickupi_arslan",
-      secretKey: "sk_live_quickupi_arslan_secret",
-      observerSecret: "obs_sec_quickupi_982348",
+      title: "Product Designer & Fullstack Engineer",
+      bio: "Helping ambitious startups craft world-class software. Available for UI design, Next.js web applications, and technical consulting.",
+      twitter: "https://twitter.com/arslan",
+      github: "https://github.com/arslanhussain9",
+      linkedin: "https://linkedin.com/in/arslan",
     },
   });
 
-  console.log(`Created merchant: ${merchant.name} (${merchant.handle})`);
+  console.log(`Created freelancer: ${freelancer.name} (@${freelancer.username})`);
 
-  // Create Hero 25-Slot Campaign
-  const cohortCampaign = await prisma.paymentCampaign.create({
+  // Create sample project payment links
+  const link1 = await prisma.paymentLink.create({
     data: {
-      merchantId: merchant.id,
-      title: "Fullstack Next.js & AI Cohort 2026",
-      slug: "nextjs-ai-cohort",
-      description: "Interactive 6-week cohort on agentic engineering and modern fintech software. Limited to 25 early seats.",
+      freelancerId: freelancer.id,
+      title: "Website Redesign — 50% Milestone Advance",
+      slug: "website-advance",
+      amountPaise: 2500000, // ₹25,000.00
+      isFixedAmount: true,
+      description: "Initial 50% advance for SaaS landing page design and Next.js frontend implementation.",
+      status: "ACTIVE",
+    },
+  });
+
+  const link2 = await prisma.paymentLink.create({
+    data: {
+      freelancerId: freelancer.id,
+      title: "1-Hour Technical Consultation",
+      slug: "consultation",
       amountPaise: 199900, // ₹1,999.00
       isFixedAmount: true,
-      totalCapPaise: 5000000, // ₹50,000.00
-      collectedPaise: 199900 * 18, // ₹35,982.00 (18 seats booked!)
-      maxSlots: 25,
-      usedSlots: 18,
-      status: "ACTIVE",
-      enableMicroPaise: true,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-    },
-  });
-
-  // Create Sold Out Campaign
-  const soldOutCampaign = await prisma.paymentCampaign.create({
-    data: {
-      merchantId: merchant.id,
-      title: "Exclusive 1-on-1 Architecture Review",
-      slug: "architecture-review",
-      description: "Private 90-minute architecture review session.",
-      amountPaise: 499900, // ₹4,999.00
-      isFixedAmount: true,
-      totalCapPaise: 2500000,
-      collectedPaise: 2499500,
+      description: "Deep-dive 1:1 strategy session covering architecture, tech stack selection, and database design.",
       maxSlots: 5,
-      usedSlots: 5,
-      status: "SLOTS_EXHAUSTED",
-      enableMicroPaise: false,
+      usedSlots: 3,
+      status: "ACTIVE",
     },
   });
 
-  // Create Paired Android Observer Device
-  const observer = await prisma.observerDevice.create({
+  const link3 = await prisma.paymentLink.create({
     data: {
-      merchantId: merchant.id,
-      deviceName: "Pixel 8 Pro (Primary Banking SIM)",
-      deviceId: "DEV_PIXEL_8_PRO_9841",
-      deviceSecret: merchant.observerSecret,
-      appVersion: "1.0.4",
-      batteryPct: 92,
-      isCharging: false,
-      status: "ONLINE",
+      freelancerId: freelancer.id,
+      title: "Logo & Brand Identity Sprint",
+      slug: "branding-sprint",
+      amountPaise: 1200000, // ₹12,000.00
+      isFixedAmount: true,
+      description: "Complete visual identity package: logo marks, color tokens, and vector brand assets.",
+      maxSlots: 3,
+      usedSlots: 3,
+      status: "CLOSED",
     },
   });
 
-  // Seed sample transactions
-  const sampleTransactions = [
-    {
-      merchantId: merchant.id,
-      campaignId: cohortCampaign.id,
+  // Create sample payments
+  await prisma.payment.create({
+    data: {
+      freelancerId: freelancer.id,
+      paymentLinkId: link1.id,
+      payerName: "Vikram Malhotra",
+      payerEmail: "vikram@fintech.io",
+      amountPaise: 2500000,
       utrNumber: "429182736451",
-      amountPaise: 199900,
-      verificationMode: "OBSERVER_SMS",
-      status: "VERIFIED",
-      payerName: "Rohit Verma",
-      payerVpa: "rohit@okhdfcbank",
-      payerPhone: "+919876543210",
-      rawBankAlertText: "Dear Customer, INR 1,999.00 credited to a/c **1234 by UPI-ROHIT-429182736451.",
-      verifiedAt: new Date(Date.now() - 3600000 * 4),
+      note: "Advance for SaaS website redesign project",
+      status: "APPROVED",
+      approvedAt: new Date(Date.now() - 3600000 * 24),
     },
-    {
-      merchantId: merchant.id,
-      campaignId: cohortCampaign.id,
+  });
+
+  await prisma.payment.create({
+    data: {
+      freelancerId: freelancer.id,
+      paymentLinkId: link2.id,
+      payerName: "Priya Nair",
+      payerEmail: "priya@startup.co",
+      amountPaise: 199900,
       utrNumber: "429182736452",
-      amountPaise: 199914,
-      verificationMode: "MICRO_PAISE_MATCH",
-      status: "VERIFIED",
-      payerName: "Pooja Sharma",
-      payerVpa: "pooja@paytm",
-      payerPhone: "+919876543211",
-      rawBankAlertText: "Your a/c no. XX1234 is credited by Rs.1,999.14 on 19Oct26 by UPI/CR/429182736452/Pooja.",
-      verifiedAt: new Date(Date.now() - 3600000 * 2),
+      note: "Architecture consultation call slot",
+      status: "APPROVED",
+      approvedAt: new Date(Date.now() - 3600000 * 4),
     },
-    {
-      merchantId: merchant.id,
-      campaignId: cohortCampaign.id,
-      utrNumber: "429182736453",
+  });
+
+  await prisma.payment.create({
+    data: {
+      freelancerId: freelancer.id,
+      paymentLinkId: link2.id,
+      payerName: "Karan Johar",
+      payerEmail: "karan@designworks.in",
+      payerPhone: "+91 98111 22334",
       amountPaise: 199900,
-      verificationMode: "MANUAL_UTR",
-      status: "PENDING",
-      payerName: "Aman Gupta",
-      payerVpa: "aman@axisbank",
-      payerPhone: "+919876543212",
-      verifiedAt: null,
+      utrNumber: "429182736453",
+      note: "1-hr session on Next.js 14 performance",
+      status: "PENDING", // Pending 1-tap approval
     },
-  ];
+  });
 
-  for (const txn of sampleTransactions) {
-    await prisma.transaction.create({ data: txn });
-  }
-
-  console.log("Seeding complete! 2 campaigns and 3 sample transactions created.");
+  console.log("Seeding complete! Freelancer profile, 3 links, and 3 payments created.");
 }
 
 main()
