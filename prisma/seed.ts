@@ -14,7 +14,7 @@ async function main() {
   const freelancer = await prisma.freelancer.create({
     data: {
       username: "arslan",
-      name: "Arslan Ahmad",
+      name: "Arslan Hussain",
       email: "arslan@example.com",
       mobile: "+91 98765 43210",
       vpa: "arslan@okhdfcbank",

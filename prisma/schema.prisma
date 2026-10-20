@@ -10,7 +10,7 @@ generator client {
 model Freelancer {
   id             String        @id @default(cuid())
   username       String        @unique // e.g. "arslan" -> /pay/arslan
-  name           String        // e.g. "Arslan Ahmad"
+  name           String        // e.g. "Arslan Hussain"
   email          String        @unique
   mobile         String?
   vpa            String        // UPI ID e.g. "arslan@okhdfcbank"
