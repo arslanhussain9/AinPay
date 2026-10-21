@@ -8,20 +8,16 @@ import { UtrSubmissionBox } from "@/components/checkout/UtrSubmissionBox";
 import {
   CheckCircle2,
   ChevronRight,
-  Lock,
   ShieldCheck,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 
 interface FreelancerPageClientProps {
   freelancer: any;
-  paymentLinks: any[];
 }
 
 export function FreelancerPageClient({
   freelancer,
-  paymentLinks,
 }: FreelancerPageClientProps) {
   const presets = [500, 1500, 5000, 10000];
   const [selectedPreset, setSelectedPreset] = useState<number>(1500);
@@ -243,78 +239,11 @@ export function FreelancerPageClient({
           )}
         </div>
 
-        {/* Listed Services & Invoices */}
-        {paymentLinks.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-sm font-medium text-[#0d253d]">Services & Invoices</h2>
-              <span className="text-xs text-[#64748d]">{paymentLinks.length} active</span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3">
-              {paymentLinks.map((link) => {
-                const isClosed = link.status === "CLOSED" || (link.maxSlots && link.usedSlots >= link.maxSlots);
-                const remaining = link.maxSlots ? Math.max(0, link.maxSlots - link.usedSlots) : null;
-
-                return (
-                  <div
-                    key={link.id}
-                    className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                  >
-                    <div className="flex flex-col gap-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-medium text-[#0d253d]">{link.title}</h3>
-                        {isClosed && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                            <Lock className="w-2.5 h-2.5" />
-                            Closed
-                          </span>
-                        )}
-                      </div>
-
-                      {link.description && (
-                        <p className="text-xs text-[#64748d] font-light line-clamp-2">
-                          {link.description}
-                        </p>
-                      )}
-
-                      {remaining !== null && (
-                        <div className="flex items-center gap-1 text-xs text-amber-700 font-medium mt-0.5">
-                          <Users className="w-3.5 h-3.5" />
-                          <span>{isClosed ? "Capacity reached" : `${remaining} spots remaining`}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-[#e3e8ee]">
-                      {link.amountPaise && (
-                        <div className="text-base font-normal text-[#0d253d] tabular-money">
-                          {formatINR(link.amountPaise)}
-                        </div>
-                      )}
-
-                      <Link
-                        href={`/p/${link.slug}`}
-                        className={`!py-1.5 !px-3.5 text-xs ${
-                          isClosed ? "btn-stripe-secondary" : "btn-stripe-primary"
-                        }`}
-                      >
-                        <span>{isClosed ? "View" : "Pay"}</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Footer */}
         <footer className="text-center text-xs text-[#64748d] pt-4 border-t border-[#e3e8ee]">
           Powered by{" "}
           <Link href="/" className="text-[#533afd] font-medium hover:underline">
-            PayMe
+            AINPAY
           </Link>
         </footer>
       </div>

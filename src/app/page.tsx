@@ -15,10 +15,10 @@ export default function HomePage() {
         <header className="max-w-7xl mx-auto w-full px-6 py-5 flex items-center justify-between relative z-20">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#533afd] flex items-center justify-center font-bold text-white text-base shadow-sm">
-              P
+              A
             </div>
             <span className="text-xl font-bold tracking-tight text-[#0d253d]">
-              PayMe
+              AINPAY
             </span>
           </div>
 
@@ -27,7 +27,7 @@ export default function HomePage() {
               Features
             </Link>
             <Link href="#comparison" className="hover:text-[#533afd] transition-colors">
-              Why PayMe
+              Why AINPAY
             </Link>
             <Link href="/pay/arslan" className="hover:text-[#533afd] transition-colors">
               Demo Profile
@@ -55,7 +55,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6 pt-16 pb-20 relative z-10 flex flex-col items-center text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-[#e3e8ee] text-[#4434d4] text-[12px] font-medium mb-8 stripe-shadow-sm backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-[#533afd]" />
-            <span>Direct UPI payment links built for Indian Freelancers</span>
+            <span>Direct UPI payment links for anyone collecting payments</span>
             <ChevronRight className="w-3.5 h-3.5 text-[#64748d]" />
           </div>
 
@@ -67,7 +67,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mt-6 text-lg sm:text-[20px] font-light text-[#64748d] max-w-2xl leading-[1.4] tracking-[-0.2px]">
-            Your personal <strong className="font-medium text-[#0d253d]">payme.in/username</strong> link to collect client advances, milestones, and project payments directly over UPI.
+            Your personal <strong className="font-medium text-[#0d253d]">ainpay.in/username</strong> link to collect client payments, deposits, and invoices directly over UPI.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -83,7 +83,7 @@ export default function HomePage() {
               href="/dashboard"
               className="btn-stripe-secondary !py-2.5 !px-5 text-[15px]"
             >
-              <span>Freelancer Dashboard</span>
+              <span>Dashboard</span>
             </Link>
           </div>
 
@@ -101,7 +101,7 @@ export default function HomePage() {
                       <span className="font-medium text-sm text-[#0d253d]">Arslan Hussain</span>
                       <CheckCircle2 className="w-4 h-4 text-[#533afd]" />
                     </div>
-                    <p className="text-xs text-[#64748d]">payme.in/pay/arslan</p>
+                    <p className="text-xs text-[#64748d]">ainpay.in/pay/arslan</p>
                   </div>
                 </div>
 
@@ -175,7 +175,7 @@ export default function HomePage() {
                 Branded Profile
               </h3>
               <p className="text-sm font-light text-[#64748d] mt-2 leading-relaxed">
-                Your personal page (`payme.in/pay/username`) showcasing your services, verified UPI ID, and direct payment presets.
+                Your personal page (`ainpay.in/pay/username`) showcasing your services, verified UPI ID, and direct payment presets.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#e3e8ee] text-xs text-[#533afd] font-medium">
@@ -224,7 +224,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6 w-full">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-xs font-bold uppercase tracking-wider text-[#533afd]">
-              Why PayMe
+              Why AINPAY
             </span>
             <h2 className="text-3xl sm:text-4xl font-light tracking-[-0.64px] text-[#0d253d] mt-2">
               Keep 100% of your project earnings.
@@ -238,7 +238,7 @@ export default function HomePage() {
                   <th className="py-4 px-6 font-medium">Feature</th>
                   <th className="py-4 px-6 font-medium">Payment Gateways</th>
                   <th className="py-4 px-6 font-medium">Raw Phone Numbers</th>
-                  <th className="py-4 px-6 font-medium text-[#533afd]">PayMe</th>
+                  <th className="py-4 px-6 font-medium text-[#533afd]">AINPAY</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e3e8ee] text-[#273951]">
@@ -283,10 +283,10 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748d]">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-[#533afd] text-white flex items-center justify-center font-bold text-xs">
-              P
+              A
             </div>
-            <span className="font-semibold text-[#0d253d]">PayMe</span>
-            <span>— Direct UPI payment links & milestone invoices for freelancers.</span>
+            <span className="font-semibold text-[#0d253d]">AINPAY</span>
+            <span>— Direct UPI payment pages & invoice links with 0% fees.</span>
           </div>
 
           <div className="flex items-center gap-6">

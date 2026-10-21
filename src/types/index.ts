@@ -6,7 +6,7 @@ export interface UPIIntentParams {
   vpa: string;
   name: string;
   amountPaise: number;
-  transactionRef: string;
+  transactionRef?: string;
   note?: string;
 }
 

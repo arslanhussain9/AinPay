@@ -34,12 +34,16 @@ model PaymentLink {
   freelancerId   String
   freelancer     Freelancer   @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
 
-  title          String       // e.g. "Website Design Advance", "1-Hour Tech Consultation"
+  title          String       // e.g. "Payment Request for Rahul Sharma"
   slug           String       // e.g. "website-advance"
   description    String?
   
+  customerName   String?      // Customer Name e.g. "Rahul Sharma"
+  customerPhone  String?      // Customer Phone e.g. "+91 98765 43210"
+  customerEmail  String?      // Customer Email e.g. "rahul@example.com"
+  
   // Stored strictly in integer paise (₹2,000.00 = 200000)
-  amountPaise    Int?         // null means custom / open amount
+  amountPaise    Int?         // Fixed amount in paise
   isFixedAmount  Boolean      @default(true)
   
   maxSlots       Int?         // e.g. 5 consultation slots

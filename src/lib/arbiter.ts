@@ -24,17 +24,13 @@ export async function approvePayment(paymentId: string) {
       },
     });
 
-    // 2. If attached to a link with slot limit, increment usage and check if full
-    if (payment.paymentLinkId && payment.paymentLink) {
-      const link = payment.paymentLink;
-      const newUsedSlots = link.usedSlots + 1;
-      const shouldClose = link.maxSlots !== null && newUsedSlots >= link.maxSlots;
-
+    // 2. Single-use payment links: close link upon payment approval
+    if (payment.paymentLinkId) {
       await tx.paymentLink.update({
-        where: { id: link.id },
+        where: { id: payment.paymentLinkId },
         data: {
-          usedSlots: newUsedSlots,
-          status: shouldClose ? "CLOSED" : link.status,
+          usedSlots: { increment: 1 },
+          status: "CLOSED",
         },
       });
     }

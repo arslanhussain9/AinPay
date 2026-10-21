@@ -47,15 +47,57 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let finalAmountPaise = amountPaise;
+    let finalEmail = payerEmail?.trim() || null;
+    let finalPhone = payerPhone?.trim() || null;
+
+    // Verify payment link is still open (single-use)
+    if (paymentLinkId) {
+      const link = await prisma.paymentLink.findUnique({
+        where: { id: paymentLinkId },
+        include: {
+          payments: {
+            where: { status: "APPROVED" },
+          },
+        },
+      });
+
+      if (!link || link.status === "CLOSED" || link.payments.length > 0) {
+        return NextResponse.json(
+          { success: false, error: "This payment link has already been paid or closed." },
+          { status: 400 }
+        );
+      }
+
+      // Enforce strict merchant-configured fixed amount (prevent frontend manipulation)
+      if (link.amountPaise && link.amountPaise > 0) {
+        finalAmountPaise = link.amountPaise;
+      }
+
+      if (!finalEmail && link.customerEmail) {
+        finalEmail = link.customerEmail;
+      }
+      if (!finalPhone && link.customerPhone) {
+        finalPhone = link.customerPhone;
+      }
+    }
+
+    if (!finalAmountPaise || finalAmountPaise <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Valid payment amount is required" },
+        { status: 400 }
+      );
+    }
+
     // Create Payment Record (Pending freelancer approval)
     const payment = await prisma.payment.create({
       data: {
         freelancerId,
         paymentLinkId: paymentLinkId || null,
         payerName: payerName.trim(),
-        payerEmail: payerEmail?.trim() || null,
-        payerPhone: payerPhone?.trim() || null,
-        amountPaise,
+        payerEmail: finalEmail,
+        payerPhone: finalPhone,
+        amountPaise: finalAmountPaise,
         utrNumber: utr.trim(),
         note: note?.trim() || null,
         status: "PENDING",

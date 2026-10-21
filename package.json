@@ -1,11 +1,12 @@
 {
-  "name": "payme",
+  "name": "ainpay",
   "version": "1.0.0",
-  "description": "Direct UPI payment links and project invoices for Indian freelancers with 0% platform fees.",
+  "description": "Direct UPI payment links and invoices for individuals, creators, and businesses with 0% platform fees.",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
-    "build": "next build",
+    "dev": "next dev -H 0.0.0.0 -p 3000",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start -p 3000",
     "lint": "next lint",
     "prisma:generate": "prisma generate",

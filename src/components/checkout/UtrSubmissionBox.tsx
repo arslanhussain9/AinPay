@@ -9,6 +9,7 @@ interface UtrSubmissionBoxProps {
   freelancerId: string;
   amountPaise: number;
   note?: string;
+  defaultPayerName?: string;
   onSuccess?: (utr: string) => void;
 }
 
@@ -17,10 +18,11 @@ export function UtrSubmissionBox({
   freelancerId,
   amountPaise,
   note,
+  defaultPayerName = "",
   onSuccess,
 }: UtrSubmissionBoxProps) {
   const [utr, setUtr] = useState("");
-  const [payerName, setPayerName] = useState("");
+  const [payerName, setPayerName] = useState(defaultPayerName);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -69,7 +71,7 @@ export function UtrSubmissionBox({
         <p className="text-xs text-[#273951] font-mono">
           Ref: <span className="font-semibold text-[#533afd]">{utr}</span>
         </p>
-        <span className="text-[11px] text-[#64748d]">Pending freelancer confirmation</span>
+        <span className="text-[11px] text-[#64748d]">Pending confirmation</span>
       </div>
     );
   }

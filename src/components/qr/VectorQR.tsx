@@ -52,7 +52,7 @@ export function VectorQR({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `PayMe-${payeeName ? payeeName.replace(/\s+/g, "_") : "QR"}.svg`;
+    a.download = `AINPAY-${payeeName ? payeeName.replace(/\s+/g, "_") : "QR"}.svg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

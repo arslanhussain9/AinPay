@@ -39,8 +39,11 @@ export function buildUPIUri(params: UPIIntentParams): string {
     pn: name.trim(),
     am: amountStr,
     cu: "INR",
-    tr: transactionRef.trim(),
   });
+
+  if (transactionRef && transactionRef.trim().length > 0) {
+    query.set("tr", transactionRef.trim());
+  }
 
   if (note && note.trim().length > 0) {
     query.set("tn", note.trim());

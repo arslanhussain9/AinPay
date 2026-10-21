@@ -1,12 +1,8 @@
 import React from "react";
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { buildUPIUri, formatINR } from "@/lib/utils";
-import { VectorQR } from "@/components/qr/VectorQR";
-import { MobileDrawer } from "@/components/checkout/MobileDrawer";
-import { UtrSubmissionBox } from "@/components/checkout/UtrSubmissionBox";
-import { ArrowLeft, Lock, ShieldCheck, Users } from "lucide-react";
-import Link from "next/link";
+import { buildUPIUri } from "@/lib/utils";
+import { CustomerPaymentClient } from "./CustomerPaymentClient";
 
 interface PageProps {
   params: {
@@ -19,7 +15,12 @@ export const dynamic = "force-dynamic";
 export default async function PaymentLinkCheckoutPage({ params }: PageProps) {
   const paymentLink = await prisma.paymentLink.findFirst({
     where: { slug: params.slug },
-    include: { freelancer: true },
+    include: {
+      freelancer: true,
+      payments: {
+        where: { status: "APPROVED" },
+      },
+    },
   });
 
   if (!paymentLink) {
@@ -29,133 +30,45 @@ export default async function PaymentLinkCheckoutPage({ params }: PageProps) {
   const { freelancer } = paymentLink;
   const isClosed =
     paymentLink.status === "CLOSED" ||
+    paymentLink.payments.length > 0 ||
+    paymentLink.usedSlots >= 1 ||
     (paymentLink.maxSlots !== null && paymentLink.usedSlots >= paymentLink.maxSlots);
 
   const amountPaise = paymentLink.amountPaise || 100000;
+
+  const note = paymentLink.customerName
+    ? `Payment Request for ${paymentLink.customerName}`
+    : paymentLink.title;
 
   const upiUri = buildUPIUri({
     vpa: freelancer.vpa,
     name: freelancer.name,
     amountPaise,
-    transactionRef: `INV_${paymentLink.slug.toUpperCase().slice(0, 8)}_${Date.now().toString().slice(-4)}`,
-    note: paymentLink.title,
+    note,
   });
 
-  const remaining = paymentLink.maxSlots ? Math.max(0, paymentLink.maxSlots - paymentLink.usedSlots) : null;
-
   return (
-    <div className="min-h-screen bg-[#f6f9fc] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-md z-10 flex flex-col gap-4">
-        {/* Navigation */}
-        <div className="flex items-center justify-between px-1">
-          <Link
-            href={`/pay/${freelancer.username}`}
-            className="flex items-center gap-1.5 text-xs text-[#64748d] hover:text-[#0d253d] transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{freelancer.name}</span>
-          </Link>
-
-          <span className="text-xs text-[#533afd] font-medium flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#533afd]" />
-            Direct Bank Transfer
-          </span>
-        </div>
-
-        {/* Checkout Card */}
-        <div className="bg-white rounded-2xl border border-[#e3e8ee] p-6 sm:p-7 flex flex-col gap-5 stripe-shadow-md relative overflow-hidden">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-[#533afd] bg-[#b9b9f9]/30 px-2.5 py-0.5 rounded-full">
-                Invoice
-              </span>
-              <span className="text-xs text-[#64748d]">
-                To: <strong className="text-[#0d253d] font-medium">{freelancer.name}</strong>
-              </span>
-            </div>
-
-            <h1 className="text-xl sm:text-2xl font-light tracking-[-0.64px] text-[#0d253d] mt-1">
-              {paymentLink.title}
-            </h1>
-
-            {paymentLink.description && (
-              <p className="text-xs text-[#64748d] font-light leading-relaxed">
-                {paymentLink.description}
-              </p>
-            )}
-
-            {/* Price Box */}
-            <div className="mt-2 flex items-baseline justify-between p-3 rounded-xl bg-[#f6f9fc] border border-[#e3e8ee]">
-              <span className="text-xs text-[#64748d]">Total</span>
-              <span className="text-2xl sm:text-3xl font-normal text-[#0d253d] tracking-tight tabular-money">
-                {formatINR(amountPaise)}
-              </span>
-            </div>
-
-            {remaining !== null && (
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 font-medium">
-                <span className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-amber-600" />
-                  <span>{isClosed ? "Capacity reached" : `${remaining} spots remaining`}</span>
-                </span>
-                <span className="tabular-money">{paymentLink.usedSlots} booked</span>
-              </div>
-            )}
-          </div>
-
-          {!isClosed ? (
-            <>
-              {/* Desktop Vector SVG QR */}
-              <div className="hidden sm:flex flex-col items-center">
-                <VectorQR
-                  upiUri={upiUri}
-                  payeeName={freelancer.name}
-                  amountFormatted={formatINR(amountPaise)}
-                  size={210}
-                />
-              </div>
-
-              {/* Mobile 1-Tap Drawer */}
-              <div className="sm:hidden w-full">
-                <MobileDrawer
-                  upiUri={upiUri}
-                  amountFormatted={formatINR(amountPaise)}
-                  payeeName={freelancer.name}
-                />
-              </div>
-
-              {/* UTR Submission Box */}
-              <UtrSubmissionBox
-                paymentLinkId={paymentLink.id}
-                freelancerId={freelancer.id}
-                amountPaise={amountPaise}
-                note={paymentLink.title}
-              />
-            </>
-          ) : (
-            <div className="p-6 rounded-xl bg-[#f6f9fc] border border-[#e3e8ee] flex flex-col items-center text-center gap-2">
-              <Lock className="w-8 h-8 text-rose-500" />
-              <h3 className="text-sm font-semibold text-[#0d253d]">Invoice Closed</h3>
-              <p className="text-xs text-[#64748d]">This invoice is no longer accepting payments.</p>
-              <Link
-                href={`/pay/${freelancer.username}`}
-                className="mt-2 text-xs text-[#533afd] hover:underline font-medium"
-              >
-                Return to profile →
-              </Link>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="pt-3 border-t border-[#e3e8ee] flex items-center justify-between text-[11px] text-[#64748d]">
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#533afd]" />
-              UPI: <strong className="text-[#0d253d] font-mono">{freelancer.vpa}</strong>
-            </span>
-            <span>Secured via PayMe</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <CustomerPaymentClient
+      paymentLink={{
+        id: paymentLink.id,
+        title: paymentLink.title,
+        slug: paymentLink.slug,
+        customerName: paymentLink.customerName,
+        customerEmail: paymentLink.customerEmail,
+        customerPhone: paymentLink.customerPhone,
+        amountPaise,
+        description: paymentLink.description,
+        status: paymentLink.status,
+      }}
+      merchant={{
+        id: freelancer.id,
+        name: freelancer.name,
+        vpa: freelancer.vpa,
+        mobile: freelancer.mobile,
+        username: freelancer.username,
+      }}
+      isClosed={isClosed}
+      upiUri={upiUri}
+    />
   );
 }

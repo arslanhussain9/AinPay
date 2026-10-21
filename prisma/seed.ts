@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding PayMe Freelancer Database...");
+  console.log("Seeding AINPAY Freelancer Database...");
 
   // Clean existing tables
   await prisma.payment.deleteMany();
@@ -28,29 +28,37 @@ async function main() {
 
   console.log(`Created freelancer: ${freelancer.name} (@${freelancer.username})`);
 
-  // Create sample project payment links
+  // Create sample project payment links (Single-use)
   const link1 = await prisma.paymentLink.create({
     data: {
       freelancerId: freelancer.id,
-      title: "Website Redesign — 50% Milestone Advance",
+      title: "Payment Request for Vikram Malhotra",
+      customerName: "Vikram Malhotra",
+      customerEmail: "vikram@fintech.io",
+      customerPhone: "+91 98200 11223",
       slug: "website-advance",
       amountPaise: 2500000, // ₹25,000.00
       isFixedAmount: true,
-      description: "Initial 50% advance for SaaS landing page design and Next.js frontend implementation.",
-      status: "ACTIVE",
+      maxSlots: 1,
+      usedSlots: 1,
+      description: "Milestone advance for SaaS landing page design and Next.js frontend implementation.",
+      status: "CLOSED", // Already paid
     },
   });
 
   const link2 = await prisma.paymentLink.create({
     data: {
       freelancerId: freelancer.id,
-      title: "1-Hour Technical Consultation",
+      title: "Payment Request for Priya Nair",
+      customerName: "Priya Nair",
+      customerEmail: "priya@startup.co",
+      customerPhone: "+91 98111 44556",
       slug: "consultation",
       amountPaise: 199900, // ₹1,999.00
       isFixedAmount: true,
+      maxSlots: 1,
+      usedSlots: 0,
       description: "Deep-dive 1:1 strategy session covering architecture, tech stack selection, and database design.",
-      maxSlots: 5,
-      usedSlots: 3,
       status: "ACTIVE",
     },
   });
@@ -58,14 +66,17 @@ async function main() {
   const link3 = await prisma.paymentLink.create({
     data: {
       freelancerId: freelancer.id,
-      title: "Logo & Brand Identity Sprint",
+      title: "Payment Request for Rahul Sharma",
+      customerName: "Rahul Sharma",
+      customerEmail: "rahul@brandscale.in",
+      customerPhone: "+91 98765 12345",
       slug: "branding-sprint",
       amountPaise: 1200000, // ₹12,000.00
       isFixedAmount: true,
+      maxSlots: 1,
+      usedSlots: 0,
       description: "Complete visual identity package: logo marks, color tokens, and vector brand assets.",
-      maxSlots: 3,
-      usedSlots: 3,
-      status: "CLOSED",
+      status: "ACTIVE",
     },
   });
 

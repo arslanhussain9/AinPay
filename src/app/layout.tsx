@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PayMe — Direct UPI Payment Links & Invoices for Freelancers",
-  description: "Accept client payments directly into your bank account over UPI. Custom branded payment links, fixed milestone invoices, and 1-tap verification.",
+  title: "AINPAY — Direct UPI Payment Links & Invoices for Everyone",
+  description: "Collect payments directly into your bank account over UPI. Custom payment pages, invoice links, and instant 0% fee bank settlements.",
 };
 
 export default function RootLayout({

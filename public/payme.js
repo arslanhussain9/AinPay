@@ -100,7 +100,7 @@
   };
 
   document.addEventListener("DOMContentLoaded", function () {
-    const buttons = document.querySelectorAll("[data-payme-pay]");
+    const buttons = document.querySelectorAll("[data-ainpay-pay], [data-payme-pay]");
     buttons.forEach(function (button) {
       button.addEventListener("click", function (e) {
         e.preventDefault();
@@ -112,5 +112,6 @@
     });
   });
 
+  window.AINPAY = PayMe;
   window.PayMe = PayMe;
 })(window, document);

@@ -14,21 +14,11 @@ export const dynamic = "force-dynamic";
 export default async function FreelancerProfilePage({ params }: PageProps) {
   const freelancer = await prisma.freelancer.findUnique({
     where: { username: params.handle },
-    include: {
-      paymentLinks: {
-        orderBy: { createdAt: "desc" },
-      },
-    },
   });
 
   if (!freelancer) {
     notFound();
   }
 
-  return (
-    <FreelancerPageClient
-      freelancer={freelancer}
-      paymentLinks={freelancer.paymentLinks}
-    />
-  );
+  return <FreelancerPageClient freelancer={freelancer} />;
 }
