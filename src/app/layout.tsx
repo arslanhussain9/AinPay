@@ -4,6 +4,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AINPAY — Direct UPI Payment Links & Invoices for Everyone",
   description: "Collect payments directly into your bank account over UPI. Custom payment pages, invoice links, and instant 0% fee bank settlements.",
+  icons: {
+    icon: "/semi-logo.png",
+    shortcut: "/semi-logo.png",
+    apple: "/semi-logo.png",
+  },
 };
 
 export default function RootLayout({

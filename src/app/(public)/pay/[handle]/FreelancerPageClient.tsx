@@ -87,27 +87,6 @@ export function FreelancerPageClient({
               <span className="font-mono text-[#0d253d]">{freelancer.vpa}</span>
             </span>
           </div>
-
-          {/* Social Links */}
-          {(freelancer.twitter || freelancer.github || freelancer.linkedin) && (
-            <div className="mt-4 flex items-center gap-4 text-xs text-[#64748d]">
-              {freelancer.twitter && (
-                <a href={freelancer.twitter} target="_blank" rel="noreferrer" className="hover:text-[#533afd]">
-                  Twitter
-                </a>
-              )}
-              {freelancer.github && (
-                <a href={freelancer.github} target="_blank" rel="noreferrer" className="hover:text-[#533afd]">
-                  GitHub
-                </a>
-              )}
-              {freelancer.linkedin && (
-                <a href={freelancer.linkedin} target="_blank" rel="noreferrer" className="hover:text-[#533afd]">
-                  LinkedIn
-                </a>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Quick Pay Box */}
@@ -240,10 +219,10 @@ export function FreelancerPageClient({
         </div>
 
         {/* Footer */}
-        <footer className="text-center text-xs text-[#64748d] pt-4 border-t border-[#e3e8ee]">
-          Powered by{" "}
-          <Link href="/" className="text-[#533afd] font-medium hover:underline">
-            AINPAY
+        <footer className="text-center text-xs text-[#64748d] pt-4 border-t border-[#e3e8ee] flex items-center justify-center gap-1.5">
+          <span>Powered by</span>
+          <Link href="/" className="inline-flex items-center hover:opacity-85 transition-opacity">
+            <img src="/full-logo.png" alt="AinPay" className="h-4 w-auto object-contain" />
           </Link>
         </footer>
       </div>

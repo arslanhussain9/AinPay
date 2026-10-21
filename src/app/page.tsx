@@ -13,14 +13,13 @@ export default function HomePage() {
       <div className="relative w-full stripe-gradient-mesh border-b border-[#e3e8ee] overflow-hidden">
         {/* Navigation Bar */}
         <header className="max-w-7xl mx-auto w-full px-6 py-5 flex items-center justify-between relative z-20">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#533afd] flex items-center justify-center font-bold text-white text-base shadow-sm">
-              A
-            </div>
-            <span className="text-xl font-bold tracking-tight text-[#0d253d]">
-              AINPAY
-            </span>
-          </div>
+          <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
+            <img
+              src="/full-logo.png"
+              alt="AinPay"
+              className="h-8 w-auto object-contain"
+            />
+          </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-[15px] font-normal text-[#273951]">
             <Link href="#features" className="hover:text-[#533afd] transition-colors">
@@ -36,16 +35,16 @@ export default function HomePage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/dashboard"
+              href="/login"
               className="text-[14px] text-[#273951] hover:text-[#533afd] font-medium hidden sm:inline"
             >
               Sign in
             </Link>
             <Link
-              href="/pay/arslan"
+              href="/signup"
               className="btn-stripe-primary text-[14px] !py-2 !px-4"
             >
-              <span>Explore Demo Profile</span>
+              <span>Get Started</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -72,18 +71,18 @@ export default function HomePage() {
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/pay/arslan"
+              href="/signup"
               className="btn-stripe-primary !py-2.5 !px-5 text-[15px]"
             >
-              <span>Visit Demo Profile</span>
+              <span>Create Free Account</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
 
             <Link
-              href="/dashboard"
+              href="/login"
               className="btn-stripe-secondary !py-2.5 !px-5 text-[15px]"
             >
-              <span>Dashboard</span>
+              <span>Sign In to Dashboard</span>
             </Link>
           </div>
 
@@ -281,12 +280,13 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="mt-auto border-t border-[#e3e8ee] bg-white py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748d]">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-[#533afd] text-white flex items-center justify-center font-bold text-xs">
-              A
-            </div>
-            <span className="font-semibold text-[#0d253d]">AINPAY</span>
-            <span>— Direct UPI payment pages & invoice links with 0% fees.</span>
+          <div className="flex items-center gap-3">
+            <img
+              src="/full-logo.png"
+              alt="AinPay"
+              className="h-6 w-auto object-contain"
+            />
+            <span className="hidden sm:inline text-[#64748d]">— Direct UPI payment pages & invoice links with 0% fees.</span>
           </div>
 
           <div className="flex items-center gap-6">

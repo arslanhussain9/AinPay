@@ -244,7 +244,10 @@ export function CustomerPaymentClient({
               <ShieldCheck className="w-3.5 h-3.5 text-[#533afd]" />
               Direct Bank Settlement
             </span>
-            <span>Secured via AINPAY</span>
+            <span className="flex items-center gap-1">
+              <span>Secured via</span>
+              <img src="/full-logo.png" alt="AinPay" className="h-3.5 w-auto object-contain inline-block" />
+            </span>
           </div>
         </div>
       </div>

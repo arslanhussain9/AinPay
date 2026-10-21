@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const sessionUser = await getSessionUser();
     const body = await req.json();
-    const { freelancerId, name, vpa, mobile, title, bio, twitter, github, linkedin } = body;
+    const { freelancerId, name, vpa, mobile, title, bio } = body;
 
-    if (!freelancerId || !name?.trim() || !vpa?.trim()) {
+    const targetId = sessionUser?.id || freelancerId;
+    if (!targetId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required to update account." },
+        { status: 401 }
+      );
+    }
+
+    if (!name?.trim() || !vpa?.trim()) {
       return NextResponse.json(
         { success: false, error: "Name and UPI ID (VPA) are required." },
         { status: 400 }
@@ -21,16 +33,13 @@ export async function POST(req: NextRequest) {
     }
 
     const updated = await prisma.freelancer.update({
-      where: { id: freelancerId },
+      where: { id: targetId },
       data: {
         name: name.trim(),
         vpa: vpa.trim().toLowerCase(),
         mobile: mobile?.trim() || null,
         title: title?.trim() || null,
         bio: bio?.trim() || null,
-        twitter: twitter?.trim() || null,
-        github: github?.trim() || null,
-        linkedin: linkedin?.trim() || null,
       },
     });
 

@@ -1,14 +1,20 @@
 import React from "react";
 import prisma from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth";
 import { DashboardClient } from "./DashboardClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  // Demo uses freelancer 'arslan'
+  const sessionUser = await getSessionUser();
+  if (!sessionUser) {
+    redirect("/login");
+  }
+
+  // Fetch authenticated freelancer's data
   const freelancer = await prisma.freelancer.findUnique({
-    where: { username: "arslan" },
+    where: { id: sessionUser.id },
     include: {
       paymentLinks: {
         orderBy: { createdAt: "desc" },
@@ -21,7 +27,7 @@ export default async function DashboardPage() {
   });
 
   if (!freelancer) {
-    notFound();
+    redirect("/login");
   }
 
   // Calculate volume & fees saved (2.36% standard PG fee)

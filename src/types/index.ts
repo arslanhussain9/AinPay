@@ -20,7 +20,4 @@ export interface FreelancerProfileDTO {
   title?: string | null;
   bio?: string | null;
   avatarUrl?: string | null;
-  twitter?: string | null;
-  github?: string | null;
-  linkedin?: string | null;
 }

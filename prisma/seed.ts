@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -10,12 +11,16 @@ async function main() {
   await prisma.paymentLink.deleteMany();
   await prisma.freelancer.deleteMany();
 
+  // Hash default password for arslan: "Arslan1234"
+  const defaultPasswordHash = await bcrypt.hash("Arslan1234", 10);
+
   // Create primary freelancer profile
   const freelancer = await prisma.freelancer.create({
     data: {
       username: "arslan",
       name: "Arslan Hussain",
       email: "arslan@example.com",
+      passwordHash: defaultPasswordHash,
       mobile: "+91 98765 43210",
       vpa: "arslan@okhdfcbank",
       title: "Product Designer & Fullstack Engineer",

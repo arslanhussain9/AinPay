@@ -1,7 +1,6 @@
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -13,6 +12,7 @@ model Freelancer {
   username       String        @unique // e.g. "arslan" -> /pay/arslan
   name           String        // e.g. "Arslan Hussain"
   email          String        @unique
+  passwordHash   String?       // Hashed password for authentication
   mobile         String?
   vpa            String        // UPI ID e.g. "arslan@okhdfcbank"
   title          String?       // e.g. "Fullstack Developer & UI Designer"

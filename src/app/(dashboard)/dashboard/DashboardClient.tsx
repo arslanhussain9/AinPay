@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatINR, rupeesToPaise } from "@/lib/utils";
 import {
   ArrowUpRight,
@@ -20,6 +21,7 @@ import {
   X,
   AlertCircle,
   Share2,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -46,6 +48,17 @@ export function DashboardClient({
   const [feesSavedPaise, setFeesSavedPaise] = useState(initialFeesSaved);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    } finally {
+      window.location.href = "/login";
+    }
+  };
 
   // Link Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,9 +79,6 @@ export function DashboardClient({
   const [editMobile, setEditMobile] = useState(profile.mobile || "");
   const [editTitle, setEditTitle] = useState(profile.title || "");
   const [editBio, setEditBio] = useState(profile.bio || "");
-  const [editTwitter, setEditTwitter] = useState(profile.twitter || "");
-  const [editGithub, setEditGithub] = useState(profile.github || "");
-  const [editLinkedin, setEditLinkedin] = useState(profile.linkedin || "");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // 1-Tap Approve Payment
@@ -209,9 +219,6 @@ export function DashboardClient({
           mobile: editMobile.trim() || undefined,
           title: editTitle.trim() || undefined,
           bio: editBio.trim() || undefined,
-          twitter: editTwitter.trim() || undefined,
-          github: editGithub.trim() || undefined,
-          linkedin: editLinkedin.trim() || undefined,
         }),
       });
 
@@ -251,11 +258,12 @@ export function DashboardClient({
       <header className="bg-white border-b border-[#e3e8ee] px-6 py-4 sticky top-0 z-30 stripe-shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#533afd] text-white flex items-center justify-center font-bold text-base shadow-sm">
-                A
-              </div>
-              <span className="font-bold text-lg tracking-tight text-[#0d253d]">AINPAY</span>
+            <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
+              <img
+                src="/full-logo.png"
+                alt="AinPay"
+                className="h-6 w-auto object-contain"
+              />
             </Link>
             <span className="text-[#e3e8ee] text-sm">/</span>
             <div className="flex items-center gap-1.5 text-xs text-[#64748d]">
@@ -264,13 +272,13 @@ export function DashboardClient({
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setIsProfileModalOpen(true)}
+            <Link
+              href="/dashboard/account"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#e3e8ee] hover:border-[#a8c3de] text-xs text-[#273951] font-medium transition-colors"
             >
               <User className="w-3.5 h-3.5 text-[#533afd]" />
-              <span>Edit Profile</span>
-            </button>
+              <span>Account Settings</span>
+            </Link>
 
             <Link
               href={`/pay/${profile.username}`}
@@ -280,6 +288,15 @@ export function DashboardClient({
               <span>ainpay.in/pay/{profile.username}</span>
               <ExternalLink className="w-3.5 h-3.5 text-[#64748d]" />
             </Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-xs text-rose-600 font-medium transition-colors"
+              title="Sign out of account"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log out</span>
+            </button>
           </div>
         </div>
       </header>
@@ -644,39 +661,7 @@ export function DashboardClient({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-[#64748d] mb-1 block">Twitter URL</label>
-                  <input
-                    type="url"
-                    value={editTwitter}
-                    onChange={(e) => setEditTwitter(e.target.value)}
-                    placeholder="https://twitter.com/..."
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-[#64748d] mb-1 block">GitHub URL</label>
-                  <input
-                    type="url"
-                    value={editGithub}
-                    onChange={(e) => setEditGithub(e.target.value)}
-                    placeholder="https://github.com/..."
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="text-xs text-[#64748d] mb-1 block">LinkedIn URL</label>
-                <input
-                  type="url"
-                  value={editLinkedin}
-                  onChange={(e) => setEditLinkedin(e.target.value)}
-                  placeholder="https://linkedin.com/in/..."
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                />
-              </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
