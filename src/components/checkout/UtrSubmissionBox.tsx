@@ -10,7 +10,7 @@ interface UtrSubmissionBoxProps {
   amountPaise: number;
   note?: string;
   defaultPayerName?: string;
-  onSuccess?: (utr: string) => void;
+  onSuccess?: (utr: string, paymentId?: string) => void;
 }
 
 export function UtrSubmissionBox({
@@ -52,7 +52,7 @@ export function UtrSubmissionBox({
       const data = await res.json();
       if (data.success) {
         setSubmitted(true);
-        onSuccess?.(utr.trim());
+        onSuccess?.(utr.trim(), data.data?.paymentId);
       } else {
         setError(data.error || "Verification failed. Check the 12-digit UTR.");
       }
@@ -65,13 +65,21 @@ export function UtrSubmissionBox({
 
   if (submitted) {
     return (
-      <div className="w-full p-4 rounded-xl bg-emerald-50/80 border border-emerald-200/80 flex flex-col items-center text-center gap-1 animate-fade-in">
-        <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-        <h4 className="text-xs font-semibold text-[#0d253d]">Payment Logged</h4>
+      <div className="w-full p-4 rounded-xl bg-emerald-50/80 border border-emerald-200/80 flex flex-col items-center text-center gap-1.5 animate-fade-in">
+        <div className="flex items-center gap-1.5 text-emerald-800 font-semibold text-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <span>Payment Logged</span>
+        </div>
         <p className="text-xs text-[#273951] font-mono">
           Ref: <span className="font-semibold text-[#533afd]">{utr}</span>
         </p>
-        <span className="text-[11px] text-[#64748d]">Pending confirmation</span>
+        <div className="flex items-center gap-1.5 text-[11px] text-[#64748d] mt-1">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>Listening for settlement confirmation...</span>
+        </div>
       </div>
     );
   }

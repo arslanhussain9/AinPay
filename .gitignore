@@ -34,6 +34,7 @@ Thumbs.db
 
 # TypeScript declaration cache
 next-env.d.ts
+*.tsbuildinfo
 
 # Local agent & documentation guides
 .agents/

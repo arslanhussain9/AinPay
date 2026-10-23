@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { formatINR, rupeesToPaise } from "@/lib/utils";
 import {
@@ -22,6 +22,10 @@ import {
   AlertCircle,
   Share2,
   LogOut,
+  Calendar,
+  BarChart3,
+  ShieldCheck,
+  Slash,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -40,27 +44,29 @@ export function DashboardClient({
   totalEarningsPaise: initialEarnings,
   feesSavedPaise: initialFeesSaved,
 }: DashboardClientProps) {
+  const router = useRouter();
   const [profile, setProfile] = useState(initialFreelancer);
   const [payments, setPayments] = useState(initialPayments);
   const [paymentLinks, setPaymentLinks] = useState(initialLinks);
   const [totalEarningsPaise, setTotalEarningsPaise] = useState(initialEarnings);
-  // Retained calculation for separate analytics / earnings section
   const [feesSavedPaise, setFeesSavedPaise] = useState(initialFeesSaved);
+
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
-  const router = useRouter();
+  const [statusFeedback, setStatusFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
-    } catch {
-      // ignore
-    } finally {
-      window.location.href = "/login";
-    }
-  };
+  // Link Filter tab: "ALL" | "ACTIVE" | "CLOSED"
+  const [linkFilter, setLinkFilter] = useState<"ALL" | "ACTIVE" | "CLOSED">("ALL");
 
-  // Link Modal State
+  // Analytics Date Filter: "7D" | "30D" | "ALL"
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<"7D" | "30D" | "ALL">("30D");
+  const [hoveredBar, setHoveredBar] = useState<{ label: string; amount: number; count: number } | null>(null);
+
+  // Close Link Confirmation Modal State
+  const [linkToClose, setLinkToClose] = useState<any | null>(null);
+  const [isClosingLink, setIsClosingLink] = useState(false);
+
+  // New Link Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [amountRupees, setAmountRupees] = useState("");
@@ -72,14 +78,16 @@ export function DashboardClient({
   const [generatedLink, setGeneratedLink] = useState<any | null>(null);
   const [copiedGenerated, setCopiedGenerated] = useState(false);
 
-  // Profile Modal State
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [editName, setEditName] = useState(profile.name);
-  const [editVpa, setEditVpa] = useState(profile.vpa);
-  const [editMobile, setEditMobile] = useState(profile.mobile || "");
-  const [editTitle, setEditTitle] = useState(profile.title || "");
-  const [editBio, setEditBio] = useState(profile.bio || "");
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    } finally {
+      window.location.href = "/login";
+    }
+  };
 
   // 1-Tap Approve Payment
   const handleApprove = async (paymentId: string) => {
@@ -102,17 +110,19 @@ export function DashboardClient({
             setPaymentLinks((prev) =>
               prev.map((l) =>
                 l.id === approved.paymentLinkId
-                  ? { ...l, status: "CLOSED", usedSlots: l.usedSlots + 1 }
+                  ? { ...l, status: "CLOSED", usedSlots: (l.usedSlots || 0) + 1 }
                   : l
               )
             );
           }
         }
+        setStatusFeedback({ type: "success", text: "Payment verified and credited to your account!" });
+        setTimeout(() => setStatusFeedback(null), 4000);
       } else {
-        alert(data.error || "Failed to approve payment");
+        setStatusFeedback({ type: "error", text: data.error || "Failed to approve payment" });
       }
     } catch {
-      alert("Network error approving payment");
+      setStatusFeedback({ type: "error", text: "Network error approving payment." });
     } finally {
       setActionInProgress(null);
     }
@@ -129,13 +139,52 @@ export function DashboardClient({
         setPayments((prev) =>
           prev.map((p) => (p.id === paymentId ? { ...p, status: "DECLINED" } : p))
         );
+        setStatusFeedback({ type: "success", text: "Payment submission declined." });
+        setTimeout(() => setStatusFeedback(null), 4000);
       } else {
-        alert(data.error || "Failed to decline payment");
+        setStatusFeedback({ type: "error", text: data.error || "Failed to decline payment" });
       }
     } catch {
-      alert("Network error declining payment");
+      setStatusFeedback({ type: "error", text: "Network error declining payment." });
     } finally {
       setActionInProgress(null);
+    }
+  };
+
+  // Close Payment Link action
+  const handleConfirmCloseLink = async () => {
+    if (!linkToClose) return;
+    setIsClosingLink(true);
+
+    try {
+      const res = await fetch(`/api/v1/links/${linkToClose.id}/close`, {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to close payment link.");
+      }
+
+      setPaymentLinks((prev) =>
+        prev.map((l) =>
+          l.id === linkToClose.id ? { ...l, status: "CLOSED" } : l
+        )
+      );
+
+      setStatusFeedback({
+        type: "success",
+        text: `Payment link for "${linkToClose.customerName || linkToClose.title}" has been closed.`,
+      });
+      setTimeout(() => setStatusFeedback(null), 4000);
+      setLinkToClose(null);
+    } catch (err: any) {
+      setStatusFeedback({
+        type: "error",
+        text: err.message || "Failed to close link. Please try again.",
+      });
+    } finally {
+      setIsClosingLink(false);
     }
   };
 
@@ -202,40 +251,6 @@ export function DashboardClient({
     }
   };
 
-  // Save Profile Changes
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editName.trim() || !editVpa.trim()) return;
-
-    setIsSavingProfile(true);
-    try {
-      const res = await fetch("/api/v1/profile/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          freelancerId: profile.id,
-          name: editName.trim(),
-          vpa: editVpa.trim(),
-          mobile: editMobile.trim() || undefined,
-          title: editTitle.trim() || undefined,
-          bio: editBio.trim() || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setProfile(data.data.freelancer);
-        setIsProfileModalOpen(false);
-      } else {
-        alert(data.error || "Failed to update profile");
-      }
-    } catch {
-      alert("Network error updating profile");
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
   const handleCopy = (url: string, id: string) => {
     navigator.clipboard.writeText(url);
     setCopiedLink(id);
@@ -248,26 +263,81 @@ export function DashboardClient({
     setTimeout(() => setCopiedGenerated(false), 2000);
   };
 
+  // Filtered lists
   const pendingPayments = payments.filter((p) => p.status === "PENDING");
   const approvedPayments = payments.filter((p) => p.status === "APPROVED");
   const activeLinks = paymentLinks.filter((l) => l.status === "ACTIVE");
 
+  const displayedLinks = useMemo(() => {
+    if (linkFilter === "ACTIVE") return paymentLinks.filter((l) => l.status === "ACTIVE");
+    if (linkFilter === "CLOSED") return paymentLinks.filter((l) => l.status === "CLOSED");
+    return paymentLinks;
+  }, [paymentLinks, linkFilter]);
+
+  // Transaction Analytics Calculation (Real DB Data)
+  const analyticsData = useMemo(() => {
+    const now = new Date();
+    let numDays = 30;
+    if (analyticsPeriod === "7D") numDays = 7;
+    else if (analyticsPeriod === "ALL") numDays = 90;
+
+    // Generate day buckets
+    const buckets: { [dateStr: string]: { date: Date; label: string; amountPaise: number; count: number } } = {};
+
+    for (let i = numDays - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      buckets[key] = { date: d, label, amountPaise: 0, count: 0 };
+    }
+
+    let periodVolumePaise = 0;
+    let periodCount = 0;
+
+    approvedPayments.forEach((p) => {
+      const pDate = new Date(p.approvedAt || p.createdAt);
+      const key = pDate.toISOString().slice(0, 10);
+      if (buckets[key]) {
+        buckets[key].amountPaise += p.amountPaise;
+        buckets[key].count += 1;
+        periodVolumePaise += p.amountPaise;
+        periodCount += 1;
+      } else if (analyticsPeriod === "ALL") {
+        // If older than 90 days in ALL mode, we can still count towards total
+        periodVolumePaise += p.amountPaise;
+        periodCount += 1;
+      }
+    });
+
+    const chartPoints = Object.values(buckets);
+    const maxAmountPaise = Math.max(...chartPoints.map((b) => b.amountPaise), 100000); // minimum scale ₹1,000
+
+    return {
+      chartPoints,
+      periodVolumePaise,
+      periodCount,
+      maxAmountPaise,
+    };
+  }, [approvedPayments, analyticsPeriod]);
+
   return (
-    <div className="min-h-screen bg-[#f6f9fc] text-[#0d253d] flex flex-col font-normal">
+    <div className="min-h-screen bg-[#f6f9fc] text-[#0d253d] flex flex-col font-normal selection:bg-[#b9b9f9] selection:text-[#533afd]">
       {/* Top Header */}
-      <header className="bg-white border-b border-[#e3e8ee] px-6 py-4 sticky top-0 z-30 stripe-shadow-sm">
+      <header className="bg-white border-b border-[#e3e8ee] px-4 sm:px-6 py-4 sticky top-0 z-30 stripe-shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
               <img
                 src="/full-logo.png"
-                alt="AinPay"
+                alt="AINPAY"
                 className="h-6 w-auto object-contain"
               />
             </Link>
-            <span className="text-[#e3e8ee] text-sm">/</span>
-            <div className="flex items-center gap-1.5 text-xs text-[#64748d]">
-              <strong className="text-[#0d253d] font-medium">{profile.name}</strong>
+            <span className="text-[#e3e8ee] text-sm hidden sm:inline">/</span>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#64748d]">
+              <strong className="text-[#0d253d] font-semibold">{profile.name}</strong>
+              <span className="text-[#64748d]">({profile.vpa})</span>
             </div>
           </div>
 
@@ -277,7 +347,8 @@ export function DashboardClient({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#e3e8ee] hover:border-[#a8c3de] text-xs text-[#273951] font-medium transition-colors"
             >
               <User className="w-3.5 h-3.5 text-[#533afd]" />
-              <span>Account Settings</span>
+              <span className="hidden sm:inline">Account Settings</span>
+              <span className="sm:hidden">Settings</span>
             </Link>
 
             <Link
@@ -285,7 +356,8 @@ export function DashboardClient({
               target="_blank"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f6f9fc] border border-[#e3e8ee] hover:border-[#a8c3de] text-xs text-[#273951] font-medium transition-colors"
             >
-              <span>ainpay.in/pay/{profile.username}</span>
+              <span className="hidden sm:inline">/pay/{profile.username}</span>
+              <span className="sm:hidden">Public Page</span>
               <ExternalLink className="w-3.5 h-3.5 text-[#64748d]" />
             </Link>
 
@@ -295,24 +367,73 @@ export function DashboardClient({
               title="Sign out of account"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Log out</span>
+              <span className="hidden sm:inline">Log out</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto w-full px-6 py-8 flex flex-col gap-6">
-        {/* Metric Cards Row: Simplified to 3 core metrics */}
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col gap-6">
+        {/* Status Toast Banner */}
+        {statusFeedback && (
+          <div
+            className={`p-3.5 rounded-xl text-xs font-medium flex items-center justify-between gap-2 animate-fade-in ${
+              statusFeedback.type === "success"
+                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                : "bg-rose-50 text-rose-800 border border-rose-200"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${statusFeedback.type === "success" ? "bg-emerald-500" : "bg-rose-500"}`} />
+              <span>{statusFeedback.text}</span>
+            </div>
+            <button
+              onClick={() => setStatusFeedback(null)}
+              className="text-[#64748d] hover:text-[#0d253d] p-0.5"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Top Header / Primary Action */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e3e8ee]">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#0d253d]">
+              Merchant Dashboard
+            </h1>
+            <p className="text-xs text-[#64748d] mt-1">
+              Direct UPI payment collections and real-time transaction tracking for <strong className="text-[#0d253d]">{profile.name}</strong>.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => {
+                resetLinkModal();
+                setIsModalOpen(true);
+              }}
+              className="btn-stripe-primary text-xs !py-2.5 !px-4 flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Payment Link</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 1. Summary Cards (Priority 3: Exactly 3 metrics) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Card 1: Amount Received */}
-          <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
+          <div className="bg-white rounded-2xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[#64748d] text-xs font-semibold uppercase tracking-wider">
               <span>Amount Received</span>
-              <Wallet className="w-4 h-4 text-[#533afd]" />
+              <div className="w-8 h-8 rounded-lg bg-[#533afd]/10 text-[#533afd] flex items-center justify-center">
+                <Wallet className="w-4 h-4" />
+              </div>
             </div>
             <div className="mt-3">
-              <div className="text-2xl sm:text-3xl font-normal text-[#0d253d] tabular-money tracking-tight">
+              <div className="text-2xl sm:text-3xl font-light text-[#0d253d] tabular-money tracking-tight">
                 {formatINR(totalEarningsPaise)}
               </div>
               <div className="text-xs text-emerald-700 flex items-center gap-1 mt-1 font-medium">
@@ -323,64 +444,236 @@ export function DashboardClient({
           </div>
 
           {/* Card 2: Active Links */}
-          <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
+          <div className="bg-white rounded-2xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[#64748d] text-xs font-semibold uppercase tracking-wider">
               <span>Active Links</span>
-              <Layers className="w-4 h-4 text-[#533afd]" />
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
+                <Layers className="w-4 h-4" />
+              </div>
             </div>
             <div className="mt-3">
-              <div className="text-2xl sm:text-3xl font-normal text-[#0d253d] tabular-money tracking-tight">
+              <div className="text-2xl sm:text-3xl font-light text-[#0d253d] tabular-money tracking-tight">
                 {activeLinks.length}
               </div>
-              <div className="text-xs text-[#64748d] mt-1 font-light">
-                Currently open and accepting payment
+              <div className="text-xs text-[#64748d] mt-1">
+                Currently open to accept payments
               </div>
             </div>
           </div>
 
           {/* Card 3: Pending Approvals */}
-          <div className="bg-white rounded-xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#64748d] text-xs font-medium">
+          <div className="bg-white rounded-2xl p-5 border border-[#e3e8ee] stripe-shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[#64748d] text-xs font-semibold uppercase tracking-wider">
               <span>Pending Approvals</span>
-              <Clock className="w-4 h-4 text-amber-600" />
+              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200">
+                <Clock className="w-4 h-4" />
+              </div>
             </div>
             <div className="mt-3">
-              <div className="text-2xl sm:text-3xl font-normal text-[#0d253d] tabular-money tracking-tight">
+              <div className="text-2xl sm:text-3xl font-light text-[#0d253d] tabular-money tracking-tight">
                 {pendingPayments.length}
               </div>
-              <div className="text-xs text-amber-700 mt-1 font-medium">
-                {pendingPayments.length > 0 ? "Awaiting merchant approval" : "All payments verified"}
+              <div className="text-xs mt-1 font-medium">
+                {pendingPayments.length > 0 ? (
+                  <span className="text-amber-700">Awaiting merchant review</span>
+                ) : (
+                  <span className="text-emerald-700">All submissions verified</span>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Pending Approvals Table */}
+        {/* 2. Transaction Analytics Section (Priority 3 Requirement 8) */}
+        <div className="bg-white rounded-2xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#f1f5f9]">
+            <div>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-[#533afd]" />
+                <h2 className="text-base font-semibold text-[#0d253d]">
+                  Transaction Analytics
+                </h2>
+              </div>
+              <p className="text-xs text-[#64748d] mt-0.5">
+                Real revenue volume and transaction activity over time
+              </p>
+            </div>
+
+            {/* Period Filters */}
+            <div className="flex items-center gap-1 bg-[#f6f9fc] p-1 rounded-xl border border-[#e3e8ee] self-start sm:self-auto text-xs">
+              <button
+                type="button"
+                onClick={() => setAnalyticsPeriod("7D")}
+                className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  analyticsPeriod === "7D"
+                    ? "bg-white text-[#533afd] shadow-sm font-semibold"
+                    : "text-[#64748d] hover:text-[#0d253d]"
+                }`}
+              >
+                Last 7 Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnalyticsPeriod("30D")}
+                className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  analyticsPeriod === "30D"
+                    ? "bg-white text-[#533afd] shadow-sm font-semibold"
+                    : "text-[#64748d] hover:text-[#0d253d]"
+                }`}
+              >
+                Last 30 Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnalyticsPeriod("ALL")}
+                className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  analyticsPeriod === "ALL"
+                    ? "bg-white text-[#533afd] shadow-sm font-semibold"
+                    : "text-[#64748d] hover:text-[#0d253d]"
+                }`}
+              >
+                All Time
+              </button>
+            </div>
+          </div>
+
+          {/* Metric Summary Strip for Period */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-[#f6f9fc] border border-[#e3e8ee] text-xs">
+            <div>
+              <span className="text-[#64748d] block text-[11px]">Period Revenue</span>
+              <span className="text-lg font-semibold text-[#0d253d] tabular-money">
+                {formatINR(analyticsData.periodVolumePaise)}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[#64748d] block text-[11px]">Approved Payments</span>
+              <span className="text-lg font-semibold text-[#0d253d] tabular-money">
+                {analyticsData.periodCount}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[#64748d] block text-[11px]">Platform Fee</span>
+              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                ₹0.00 (100% Retained)
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[#64748d] block text-[11px]">Benchmark Gateway Fees Saved</span>
+              <span className="text-xs font-semibold text-[#533afd] bg-[#533afd]/10 px-2.5 py-1 rounded-full">
+                {formatINR(Math.round(analyticsData.periodVolumePaise * 0.0236))}
+              </span>
+            </div>
+          </div>
+
+          {/* Responsive SVG Bar Chart or Empty State */}
+          {analyticsData.periodVolumePaise > 0 ? (
+            <div className="relative pt-2">
+              {hoveredBar && (
+                <div className="absolute top-0 right-4 bg-[#0d253d] text-white text-[11px] px-3 py-1.5 rounded-lg shadow-md pointer-events-none flex items-center gap-2">
+                  <span className="font-medium">{hoveredBar.label}:</span>
+                  <span className="font-semibold text-emerald-400 tabular-money">
+                    {formatINR(hoveredBar.amount)}
+                  </span>
+                  <span className="text-white/60">({hoveredBar.count} payment{hoveredBar.count !== 1 ? "s" : ""})</span>
+                </div>
+              )}
+
+              <div className="h-44 sm:h-52 w-full flex items-end gap-1 sm:gap-2 pt-6 pb-2 px-1 border-b border-[#e3e8ee]">
+                {analyticsData.chartPoints.map((point, pIdx) => {
+                  const heightPercent = point.amountPaise > 0
+                    ? Math.max(12, Math.round((point.amountPaise / analyticsData.maxAmountPaise) * 100))
+                    : 4;
+
+                  return (
+                    <div
+                      key={pIdx}
+                      className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer"
+                      onMouseEnter={() =>
+                        setHoveredBar({
+                          label: point.label,
+                          amount: point.amountPaise,
+                          count: point.count,
+                        })
+                      }
+                      onMouseLeave={() => setHoveredBar(null)}
+                    >
+                      <div
+                        style={{ height: `${heightPercent}%` }}
+                        className={`w-full max-w-[28px] rounded-t transition-all ${
+                          point.amountPaise > 0
+                            ? "bg-[#533afd] hover:bg-[#4434d4] group-hover:scale-y-105"
+                            : "bg-[#e2e8f0]/60 hover:bg-[#cbd5e1]"
+                        }`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* X-Axis Labels */}
+              <div className="flex justify-between text-[10px] text-[#64748d] font-mono pt-2 px-1">
+                <span>{analyticsData.chartPoints[0]?.label}</span>
+                <span>{analyticsData.chartPoints[Math.floor(analyticsData.chartPoints.length / 2)]?.label}</span>
+                <span>{analyticsData.chartPoints[analyticsData.chartPoints.length - 1]?.label}</span>
+              </div>
+            </div>
+          ) : (
+            /* Genuine Empty State */
+            <div className="py-12 px-4 rounded-xl bg-[#f8fafc] border border-dashed border-[#cbd5e1] text-center flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#64748d] mb-3">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-semibold text-[#0d253d]">
+                No approved transactions in this period
+              </h3>
+              <p className="text-xs text-[#64748d] max-w-sm mt-1">
+                Transactions approved by you during this timeframe will automatically appear here with exact revenue trends.
+              </p>
+              <button
+                onClick={() => {
+                  resetLinkModal();
+                  setIsModalOpen(true);
+                }}
+                className="mt-4 text-xs font-semibold text-[#533afd] hover:underline flex items-center gap-1"
+              >
+                <span>+ Create a Payment Link</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Pending Approvals Section (Highlighted when items exist) */}
         {pendingPayments.length > 0 && (
-          <div className="bg-amber-50/60 rounded-xl p-6 border border-amber-200 stripe-shadow-sm flex flex-col gap-4">
+          <div className="bg-amber-50/70 rounded-2xl p-6 border border-amber-200 stripe-shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-600" />
-                <h2 className="text-sm font-semibold text-amber-950">
+                <Clock className="w-4 h-4 text-amber-700" />
+                <h2 className="text-sm font-bold text-amber-950">
                   Pending Approvals ({pendingPayments.length})
                 </h2>
               </div>
+              <span className="text-xs text-amber-800">
+                Verify bank SMS before approving
+              </span>
             </div>
 
-            <div className="overflow-x-auto bg-white rounded-lg border border-amber-200">
+            <div className="overflow-x-auto bg-white rounded-xl border border-amber-200">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-[#e3e8ee] bg-[#f6f9fc] text-[#64748d]">
-                    <th className="py-3 px-4 font-medium">Customer / Client</th>
-                    <th className="py-3 px-4 font-medium">Item / Note</th>
-                    <th className="py-3 px-4 font-medium">Amount</th>
-                    <th className="py-3 px-4 font-medium">UTR</th>
-                    <th className="py-3 px-4 font-medium text-right">Actions</th>
+                  <tr className="border-b border-[#e3e8ee] bg-[#f8fafc] text-[#64748d]">
+                    <th className="py-3 px-4 font-semibold">Customer / Client</th>
+                    <th className="py-3 px-4 font-semibold">Note / Item</th>
+                    <th className="py-3 px-4 font-semibold">Amount</th>
+                    <th className="py-3 px-4 font-semibold">UTR Reference</th>
+                    <th className="py-3 px-4 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e3e8ee]">
                   {pendingPayments.map((p) => (
-                    <tr key={p.id} className="hover:bg-[#f6f9fc]">
+                    <tr key={p.id} className="hover:bg-[#f6f9fc] transition-colors">
                       <td className="py-3 px-4 font-medium text-[#0d253d]">
                         <div>{p.payerName}</div>
                         {(p.payerPhone || p.payerEmail) && (
@@ -392,10 +685,10 @@ export function DashboardClient({
                       <td className="py-3 px-4 text-[#273951]">
                         {p.note || p.paymentLink?.title || "Direct payment"}
                       </td>
-                      <td className="py-3 px-4 font-normal text-[#0d253d] tabular-money font-mono">
+                      <td className="py-3 px-4 font-semibold text-[#0d253d] tabular-money font-mono">
                         {formatINR(p.amountPaise)}
                       </td>
-                      <td className="py-3 px-4 font-mono text-[#533afd] tracking-wider font-medium">
+                      <td className="py-3 px-4 font-mono text-[#533afd] tracking-wider font-semibold">
                         {p.utrNumber}
                       </td>
                       <td className="py-3 px-4 text-right space-x-2">
@@ -410,7 +703,7 @@ export function DashboardClient({
                         <button
                           onClick={() => handleDecline(p.id)}
                           disabled={actionInProgress === p.id}
-                          className="px-2.5 py-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium"
+                          className="px-2.5 py-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium transition-colors"
                         >
                           Decline
                         </button>
@@ -423,268 +716,292 @@ export function DashboardClient({
           </div>
         )}
 
-        {/* Payment Links Section */}
-        <div className="bg-white rounded-xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+        {/* 4. Payment Links Management (Priority 4 Requirements 10 & 11) */}
+        <div className="bg-white rounded-2xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-medium text-[#0d253d]">Payment Links</h2>
-              <p className="text-xs text-[#64748d]">Single-use invoice links generated for customers</p>
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#533afd]" />
+                <h2 className="text-base font-semibold text-[#0d253d]">
+                  Payment Links
+                </h2>
+              </div>
+              <p className="text-xs text-[#64748d] mt-0.5">
+                Single-use invoice links created for customers ({paymentLinks.length} total)
+              </p>
             </div>
 
-            <button
-              onClick={() => {
-                resetLinkModal();
-                setIsModalOpen(true);
-              }}
-              className="btn-stripe-primary !py-2 !px-4 text-xs flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Payment Link</span>
-            </button>
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 bg-[#f6f9fc] p-1 rounded-xl border border-[#e3e8ee] text-xs">
+              <button
+                type="button"
+                onClick={() => setLinkFilter("ALL")}
+                className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  linkFilter === "ALL"
+                    ? "bg-white text-[#533afd] shadow-sm font-semibold"
+                    : "text-[#64748d] hover:text-[#0d253d]"
+                }`}
+              >
+                All ({paymentLinks.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setLinkFilter("ACTIVE")}
+                className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  linkFilter === "ACTIVE"
+                    ? "bg-white text-[#533afd] shadow-sm font-semibold"
+                    : "text-[#64748d] hover:text-[#0d253d]"
+                }`}
+              >
+                Active ({activeLinks.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setLinkFilter("CLOSED")}
+                className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  linkFilter === "CLOSED"
+                    ? "bg-white text-[#533afd] shadow-sm font-semibold"
+                    : "text-[#64748d] hover:text-[#0d253d]"
+                }`}
+              >
+                Closed ({paymentLinks.length - activeLinks.length})
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {paymentLinks.map((link) => {
-              const isClosed = link.status === "CLOSED";
-              const publicUrl =
-                typeof window !== "undefined"
-                  ? `${window.location.origin}/p/${link.slug}`
-                  : `http://localhost:3000/p/${link.slug}`;
+          {/* Grid of Links */}
+          {displayedLinks.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {displayedLinks.map((link) => {
+                const isClosed = link.status === "CLOSED";
+                const isPaid = (link.usedSlots || 0) >= 1;
+                const publicUrl =
+                  typeof window !== "undefined"
+                    ? `${window.location.origin}/p/${link.slug}`
+                    : `https://ainpay.in/p/${link.slug}`;
 
-              const displayCustomer = link.customerName || link.title;
+                const displayCustomer = link.customerName || link.title;
 
-              return (
-                <div
-                  key={link.id}
-                  className="p-5 rounded-xl bg-[#f6f9fc] border border-[#e3e8ee] flex flex-col justify-between gap-4"
-                >
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-[#0d253d] line-clamp-1">
-                        {displayCustomer}
-                      </h3>
-                      {isClosed ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                          <Lock className="w-2.5 h-2.5" />
-                          Closed
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#b9b9f9]/40 text-[#4434d4]">
-                          Active
-                        </span>
+                return (
+                  <div
+                    key={link.id}
+                    className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e3e8ee] hover:border-[#a8c3de] transition-all flex flex-col justify-between gap-4"
+                  >
+                    <div className="flex flex-col gap-2">
+                      {/* Top Row: Customer Name & Status Badge */}
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-sm font-semibold text-[#0d253d] line-clamp-1">
+                          {displayCustomer}
+                        </h3>
+                        {isClosed ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1 shrink-0">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>{isPaid ? "Paid & Closed" : "Closed"}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span>Active</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Contact Info (if provided) */}
+                      {(link.customerPhone || link.customerEmail) && (
+                        <div className="flex items-center gap-2 text-[11px] text-[#64748d]">
+                          {link.customerPhone && (
+                            <span className="flex items-center gap-1 font-mono">
+                              <Phone className="w-3 h-3 text-[#64748d]" />
+                              {link.customerPhone}
+                            </span>
+                          )}
+                          {link.customerEmail && (
+                            <span className="flex items-center gap-1 truncate max-w-[130px]">
+                              <Mail className="w-3 h-3 text-[#64748d]" />
+                              {link.customerEmail}
+                            </span>
+                          )}
+                        </div>
                       )}
+
+                      {/* Amount */}
+                      <div className="text-xl font-semibold text-[#0d253d] tabular-money mt-1">
+                        {formatINR(link.amountPaise || 0)}
+                      </div>
+
+                      {/* Description */}
+                      {link.description && (
+                        <p className="text-xs text-[#64748d] line-clamp-2 leading-relaxed">
+                          {link.description}
+                        </p>
+                      )}
+
+                      <div className="text-[10px] text-[#64748d] font-mono mt-1">
+                        Created: {new Date(link.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </div>
                     </div>
 
-                    {/* Customer contact info */}
-                    {(link.customerPhone || link.customerEmail) && (
-                      <div className="flex items-center gap-2 text-[11px] text-[#64748d]">
-                        {link.customerPhone && (
-                          <span className="flex items-center gap-1 font-mono">
-                            <Phone className="w-3 h-3" />
-                            {link.customerPhone}
-                          </span>
+                    {/* Bottom Actions Row */}
+                    <div className="flex items-center justify-between pt-3 border-t border-[#e3e8ee] text-xs">
+                      {/* Copy Link */}
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(publicUrl, link.id)}
+                        className="flex items-center gap-1 text-[#64748d] hover:text-[#0d253d] transition-colors font-medium"
+                        title="Copy payment link URL"
+                      >
+                        {copiedLink === link.id ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
                         )}
-                        {link.customerEmail && (
-                          <span className="flex items-center gap-1 truncate max-w-[140px]">
-                            <Mail className="w-3 h-3" />
-                            {link.customerEmail}
-                          </span>
+                        <span>{copiedLink === link.id ? "Copied" : "Copy"}</span>
+                      </button>
+
+                      <div className="flex items-center gap-3">
+                        {/* Close Link Action (if active) */}
+                        {!isClosed && (
+                          <button
+                            type="button"
+                            onClick={() => setLinkToClose(link)}
+                            className="text-rose-600 hover:text-rose-800 text-xs font-medium hover:underline flex items-center gap-1"
+                            title="Close link to prevent payment submissions"
+                          >
+                            <Lock className="w-3 h-3" />
+                            <span>Close Link</span>
+                          </button>
                         )}
+
+                        {/* View Link */}
+                        <Link
+                          href={`/p/${link.slug}`}
+                          target="_blank"
+                          className="flex items-center gap-1 text-[#533afd] hover:underline font-semibold"
+                        >
+                          <span>Open</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </Link>
                       </div>
-                    )}
-
-                    {link.amountPaise ? (
-                      <div className="text-lg font-normal text-[#0d253d] tabular-money mt-1">
-                        {formatINR(link.amountPaise)}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-[#64748d] font-light mt-1">Open Amount</div>
-                    )}
-
-                    {link.description && (
-                      <p className="text-xs text-[#64748d] font-light line-clamp-2 mt-0.5">
-                        {link.description}
-                      </p>
-                    )}
+                    </div>
                   </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-[#e3e8ee]">
-                    <button
-                      onClick={() => handleCopy(publicUrl, link.id)}
-                      className="flex items-center gap-1 text-xs text-[#64748d] hover:text-[#0d253d] transition-colors"
-                    >
-                      {copiedLink === link.id ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                      <span>{copiedLink === link.id ? "Copied" : "Copy"}</span>
-                    </button>
-
-                    <Link
-                      href={`/p/${link.slug}`}
-                      target="_blank"
-                      className="flex items-center gap-1 text-xs text-[#533afd] hover:underline font-medium"
-                    >
-                      <span>Open</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-xs text-[#64748d]">
+              No {linkFilter.toLowerCase()} payment links found.
+            </div>
+          )}
         </div>
 
-        {/* Transactions Ledger */}
-        <div className="bg-white rounded-xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-4">
+        {/* 5. Recent Transactions Activity Ledger */}
+        <div className="bg-white rounded-2xl p-6 border border-[#e3e8ee] stripe-shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-medium text-[#0d253d]">Transactions</h2>
-            <span className="text-xs text-[#64748d] tabular-money">
-              {approvedPayments.length} total
-            </span>
+            <div>
+              <h2 className="text-base font-semibold text-[#0d253d]">
+                Recent Transactions
+              </h2>
+              <p className="text-xs text-[#64748d] mt-0.5">
+                Approved and credited direct UPI payments ({approvedPayments.length} total)
+              </p>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#e3e8ee] text-[#64748d]">
-                  <th className="pb-3 font-medium">Date</th>
-                  <th className="pb-3 font-medium">Customer / Client</th>
-                  <th className="pb-3 font-medium">Note</th>
-                  <th className="pb-3 font-medium">Amount</th>
-                  <th className="pb-3 font-medium">UTR</th>
-                  <th className="pb-3 font-medium text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e3e8ee]">
-                {approvedPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#f6f9fc]">
-                    <td className="py-3 text-[#64748d] font-mono text-[11px]">
-                      {new Date(p.createdAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </td>
-                    <td className="py-3 text-[#0d253d] font-medium">{p.payerName}</td>
-                    <td className="py-3 text-[#273951]">{p.note || p.paymentLink?.title || "Direct"}</td>
-                    <td className="py-3 font-normal text-[#0d253d] tabular-money font-mono">
-                      {formatINR(p.amountPaise)}
-                    </td>
-                    <td className="py-3 font-mono text-[#533afd] tracking-wider">
-                      {p.utrNumber}
-                    </td>
-                    <td className="py-3 text-right">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Credited
-                      </span>
-                    </td>
+          {approvedPayments.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#e3e8ee] text-[#64748d] bg-[#f8fafc]">
+                    <th className="py-3 px-3 font-semibold">Date</th>
+                    <th className="py-3 px-3 font-semibold">Customer / Client</th>
+                    <th className="py-3 px-3 font-semibold">Note / Item</th>
+                    <th className="py-3 px-3 font-semibold">Amount</th>
+                    <th className="py-3 px-3 font-semibold">UTR Reference</th>
+                    <th className="py-3 px-3 font-semibold text-right">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[#e3e8ee]">
+                  {approvedPayments.map((p) => (
+                    <tr key={p.id} className="hover:bg-[#f6f9fc] transition-colors">
+                      <td className="py-3 px-3 text-[#64748d] font-mono text-[11px]">
+                        {new Date(p.approvedAt || p.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="py-3 px-3 text-[#0d253d] font-semibold">{p.payerName}</td>
+                      <td className="py-3 px-3 text-[#273951]">
+                        {p.note || p.paymentLink?.title || "Direct payment"}
+                      </td>
+                      <td className="py-3 px-3 font-semibold text-[#0d253d] tabular-money font-mono">
+                        {formatINR(p.amountPaise)}
+                      </td>
+                      <td className="py-3 px-3 font-mono text-[#533afd] tracking-wider font-semibold">
+                        {p.utrNumber}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Credited
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-xs text-[#64748d]">
+              No approved payments yet. Completed payments will be listed here.
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Modal: Edit Profile */}
-      {isProfileModalOpen && (
+      {/* Confirmation Modal: Close Payment Link */}
+      {linkToClose && (
         <div className="fixed inset-0 z-50 bg-[#0d253d]/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-[#e3e8ee] w-full max-w-md p-6 stripe-shadow-lg animate-fade-in relative max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-[#e3e8ee]">
-              <h3 className="text-sm font-semibold text-[#0d253d]">
-                Customize Profile
-              </h3>
-              <button
-                onClick={() => setIsProfileModalOpen(false)}
-                className="text-[#64748d] hover:text-[#0d253d]"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div className="bg-white rounded-2xl border border-[#e3e8ee] w-full max-w-md p-6 stripe-shadow-lg animate-fade-in relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-[#0d253d]">
+                  Close Payment Link?
+                </h3>
+                <p className="text-xs text-[#64748d]">
+                  {linkToClose.customerName || linkToClose.title}
+                </p>
+              </div>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="flex flex-col gap-3 mt-4">
-              <div>
-                <label className="text-xs text-[#64748d] mb-1 block">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Your Name"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                />
-              </div>
+            <p className="text-xs text-[#273951] leading-relaxed mb-6">
+              Are you sure you want to close this link? Once closed, customers will no longer be able to submit payments through it. This action cannot be undone.
+            </p>
 
-              <div>
-                <label className="text-xs text-[#64748d] mb-1 block">UPI ID / VPA (Payments settle directly here)</label>
-                <input
-                  type="text"
-                  required
-                  value={editVpa}
-                  onChange={(e) => setEditVpa(e.target.value)}
-                  placeholder="yourname@bank"
-                  className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-[#64748d] mb-1 block">Merchant Mobile Number (Shown on invoices)</label>
-                <input
-                  type="tel"
-                  value={editMobile}
-                  onChange={(e) => setEditMobile(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-[#64748d] mb-1 block">Title / Profession</label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="e.g. Product Designer & Developer"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-[#64748d] mb-1 block">Bio / Summary</label>
-                <textarea
-                  rows={2}
-                  value={editBio}
-                  onChange={(e) => setEditBio(e.target.value)}
-                  placeholder="Tell clients about what you do..."
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
-                />
-              </div>
-
-
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsProfileModalOpen(false)}
-                  className="px-3.5 py-2 text-xs text-[#64748d] hover:text-[#0d253d]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingProfile}
-                  className="btn-stripe-primary !py-2 !px-4 text-xs"
-                >
-                  <span>{isSavingProfile ? "Saving..." : "Save Changes"}</span>
-                </button>
-              </div>
-            </form>
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#e3e8ee]">
+              <button
+                type="button"
+                onClick={() => setLinkToClose(null)}
+                className="px-4 py-2 rounded-xl border border-[#e3e8ee] text-xs font-semibold text-[#273951] hover:bg-[#f6f9fc] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isClosingLink}
+                onClick={handleConfirmCloseLink}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-60"
+              >
+                {isClosingLink ? "Closing..." : "Yes, Close Link"}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Modal: New Payment Link Form / Immediate Shareable URL */}
+      {/* Modal: New Payment Link */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#0d253d]/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-[#e3e8ee] w-full max-w-md p-6 stripe-shadow-lg animate-fade-in relative">
@@ -710,7 +1027,7 @@ export function DashboardClient({
               </button>
             </div>
 
-            {/* View A: Success / Shareable URL View */}
+            {/* Generated Link Share View */}
             {generatedLink ? (
               <div className="flex flex-col gap-4 mt-4 animate-fade-in">
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col items-center text-center gap-1.5">
@@ -718,29 +1035,22 @@ export function DashboardClient({
                   <h4 className="text-sm font-semibold text-[#0d253d]">
                     Link Ready for {generatedLink.customerName}
                   </h4>
-                  <div className="text-xl font-medium text-[#0d253d] tabular-money mt-0.5">
+                  <div className="text-xl font-semibold text-[#0d253d] tabular-money mt-0.5">
                     {formatINR(generatedLink.amountPaise)}
                   </div>
-                  {(generatedLink.customerPhone || generatedLink.customerEmail) && (
-                    <span className="text-[11px] text-[#64748d]">
-                      {[generatedLink.customerPhone, generatedLink.customerEmail]
-                        .filter(Boolean)
-                        .join(" • ")}
-                    </span>
-                  )}
                 </div>
 
                 {/* Shareable Link Box */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-[#0d253d] flex items-center gap-1">
-                    <Share2 className="w-3 h-3 text-[#533afd]" />
-                    <span>Shareable Payment Link:</span>
+                    <Share2 className="w-3.5 h-3.5 text-[#533afd]" />
+                    <span>Shareable Payment URL:</span>
                   </label>
-                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[#f6f9fc] border border-[#a8c3de]">
+                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-[#f6f9fc] border border-[#a8c3de]">
                     <span className="text-xs font-mono text-[#0d253d] truncate flex-1 select-all px-1">
                       {typeof window !== "undefined"
                         ? `${window.location.origin}/p/${generatedLink.slug}`
-                        : `http://localhost:3000/p/${generatedLink.slug}`}
+                        : `https://ainpay.in/p/${generatedLink.slug}`}
                     </span>
                     <button
                       type="button"
@@ -748,10 +1058,10 @@ export function DashboardClient({
                         handleCopyGeneratedUrl(
                           typeof window !== "undefined"
                             ? `${window.location.origin}/p/${generatedLink.slug}`
-                            : `http://localhost:3000/p/${generatedLink.slug}`
+                            : `https://ainpay.in/p/${generatedLink.slug}`
                         )
                       }
-                      className="px-3 py-1.5 rounded-md bg-[#533afd] text-white hover:bg-[#4434d4] text-xs font-medium flex items-center gap-1 shrink-0 transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-[#533afd] text-white hover:bg-[#4434d4] text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors"
                     >
                       {copiedGenerated ? (
                         <>
@@ -768,25 +1078,25 @@ export function DashboardClient({
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-[#f6f9fc] border border-[#e3e8ee] text-[11px] text-[#64748d] flex items-center gap-1.5">
+                <div className="p-2.5 rounded-xl bg-[#f6f9fc] border border-[#e3e8ee] text-[11px] text-[#64748d] flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#533afd] shrink-0" />
-                  <span>Single-use link: automatically locks after one successful payment.</span>
+                  <span>Single-use link: automatically closes after one approved payment.</span>
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#e3e8ee]">
                   <button
                     type="button"
                     onClick={resetLinkModal}
-                    className="px-3 py-1.5 rounded-lg border border-[#e3e8ee] hover:bg-[#f6f9fc] text-xs font-medium text-[#273951]"
+                    className="px-3 py-1.5 rounded-xl border border-[#e3e8ee] hover:bg-[#f6f9fc] text-xs font-medium text-[#273951]"
                   >
-                    + Create Another Link
+                    + Create Another
                   </button>
 
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/p/${generatedLink.slug}`}
                       target="_blank"
-                      className="px-3 py-1.5 rounded-lg border border-[#533afd] text-[#533afd] hover:bg-[#533afd]/5 text-xs font-medium flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-xl border border-[#533afd] text-[#533afd] hover:bg-[#533afd]/5 text-xs font-medium flex items-center gap-1"
                     >
                       <span>Open Link</span>
                       <ArrowUpRight className="w-3 h-3" />
@@ -797,7 +1107,7 @@ export function DashboardClient({
                         setIsModalOpen(false);
                         resetLinkModal();
                       }}
-                      className="btn-stripe-primary !py-1.5 !px-4 text-xs"
+                      className="btn-stripe-primary !py-1.5 !px-4 text-xs font-semibold"
                     >
                       Done
                     </button>
@@ -805,11 +1115,10 @@ export function DashboardClient({
                 </div>
               </div>
             ) : (
-              /* View B: Link Creation Form */
-              <form onSubmit={handleCreateLink} className="flex flex-col gap-3 mt-4">
-                {/* 1. Customer Name (Required) */}
+              /* Creation Form */
+              <form onSubmit={handleCreateLink} className="flex flex-col gap-3.5 mt-4">
                 <div>
-                  <label className="text-xs text-[#64748d] mb-1 block">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1 block">
                     Customer Name <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -817,18 +1126,17 @@ export function DashboardClient({
                     required
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="e.g. Rahul Sharma"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                    placeholder="e.g. Vikram Malhotra"
+                    className="w-full h-10 px-3 rounded-xl border border-[#cbd5e1] text-xs text-[#0d253d] focus:outline-none focus:border-[#533afd] focus:ring-2 focus:ring-[#533afd]/10 font-medium"
                   />
                 </div>
 
-                {/* 2. Fixed Amount (Required, Mandatory) */}
                 <div>
-                  <label className="text-xs text-[#64748d] mb-1 block">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1 block">
                     Fixed Amount (INR) <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-xs font-semibold text-[#64748d]">₹</span>
+                    <span className="absolute left-3.5 top-2.5 text-xs font-semibold text-[#64748d]">₹</span>
                     <input
                       type="number"
                       min="1"
@@ -837,79 +1145,56 @@ export function DashboardClient({
                       value={amountRupees}
                       onChange={(e) => setAmountRupees(e.target.value)}
                       placeholder="1500"
-                      className="w-full pl-7 pr-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                      className="w-full h-10 pl-8 pr-3 rounded-xl border border-[#cbd5e1] text-xs text-[#0d253d] focus:outline-none focus:border-[#533afd] focus:ring-2 focus:ring-[#533afd]/10 font-semibold tabular-money"
                     />
                   </div>
-                  <span className="text-[10px] text-[#64748d] mt-0.5 block">
-                    Exact amount requested. Customer cannot alter this.
-                  </span>
                 </div>
 
-                {/* 3. Customer Contact: Mobile or Email (At least one required) */}
-                <div className="p-3 rounded-lg bg-[#f6f9fc] border border-[#e3e8ee] flex flex-col gap-2.5">
-                  <span className="text-xs font-medium text-[#0d253d]">
-                    Customer Contact <span className="text-rose-500">*</span>
-                    <span className="text-[11px] text-[#64748d] font-normal block">
-                      Provide at least one contact method (Mobile or Email)
-                    </span>
+                <div className="p-3 rounded-xl bg-[#f6f9fc] border border-[#e3e8ee] flex flex-col gap-2">
+                  <span className="text-xs font-bold text-[#0d253d]">
+                    Customer Contact Details *
                   </span>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[11px] text-[#64748d] mb-1 flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-[#533afd]" />
-                        <span>Mobile Number</span>
-                      </label>
                       <input
                         type="tel"
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-white border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                        placeholder="Mobile (+91...)"
+                        className="w-full h-9 px-2.5 rounded-lg bg-white border border-[#cbd5e1] text-xs text-[#0d253d] focus:outline-none focus:border-[#533afd]"
                       />
                     </div>
-
                     <div>
-                      <label className="text-[11px] text-[#64748d] mb-1 flex items-center gap-1">
-                        <Mail className="w-3 h-3 text-[#533afd]" />
-                        <span>Email Address</span>
-                      </label>
                       <input
                         type="email"
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
-                        placeholder="rahul@example.com"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-white border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                        placeholder="Email Address"
+                        className="w-full h-9 px-2.5 rounded-lg bg-white border border-[#cbd5e1] text-xs text-[#0d253d] focus:outline-none focus:border-[#533afd]"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* 4. Description (Optional) */}
                 <div>
-                  <label className="text-xs text-[#64748d] mb-1 block">
-                    Description <span className="text-[#64748d] font-normal">(Optional)</span>
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#475569] mb-1 block">
+                    Payment Description <span className="text-[#64748d] font-normal">(Optional)</span>
                   </label>
                   <textarea
                     rows={2}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="e.g. Website redesign advance, consultation slot, or invoice terms..."
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#a8c3de] text-[#0d253d] focus:outline-none focus:border-[#533afd]"
+                    placeholder="e.g. Website advance payment, logo design deliverable..."
+                    className="w-full p-2.5 rounded-xl border border-[#cbd5e1] text-xs text-[#0d253d] focus:outline-none focus:border-[#533afd] leading-relaxed"
                   />
                 </div>
 
                 {formError && (
-                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>{formError}</span>
                   </div>
                 )}
-
-                <div className="p-2.5 rounded-lg bg-[#f6f9fc] border border-[#e3e8ee] text-[11px] text-[#64748d] flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-[#533afd] shrink-0" />
-                  <span>Unique URL slug is automatically generated in the background.</span>
-                </div>
 
                 <div className="flex items-center justify-end gap-2 pt-2">
                   <button
@@ -918,14 +1203,14 @@ export function DashboardClient({
                       setIsModalOpen(false);
                       resetLinkModal();
                     }}
-                    className="px-3.5 py-2 text-xs text-[#64748d] hover:text-[#0d253d]"
+                    className="px-3.5 py-2 text-xs text-[#64748d] hover:text-[#0d253d] font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isCreatingLink}
-                    className="btn-stripe-primary !py-2 !px-4 text-xs"
+                    className="btn-stripe-primary !py-2 !px-4 text-xs font-semibold"
                   >
                     <span>{isCreatingLink ? "Generating..." : "Generate Link"}</span>
                   </button>

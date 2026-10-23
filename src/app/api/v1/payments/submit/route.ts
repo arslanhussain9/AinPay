@@ -62,9 +62,9 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      if (!link || link.status === "CLOSED" || link.payments.length > 0) {
+      if (!link || link.status !== "ACTIVE" || link.usedSlots >= 1 || link.payments.length > 0) {
         return NextResponse.json(
-          { success: false, error: "This payment link has already been paid or closed." },
+          { success: false, error: "This payment link is closed or has already received an approved payment." },
           { status: 400 }
         );
       }

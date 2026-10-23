@@ -68,8 +68,8 @@ export function LoginClient() {
           <Link href="/" className="inline-block hover:opacity-90 transition-opacity">
             <img
               src="/full-logo.png"
-              alt="AinPay"
-              className="h-9 w-auto mx-auto object-contain"
+              alt="AINPAY"
+              className="h-8 w-auto mx-auto object-contain"
             />
           </Link>
           <h2 className="text-[22px] font-bold tracking-tight text-[#0d253d] mt-3">

@@ -47,6 +47,23 @@ export default async function PaymentLinkCheckoutPage({ params }: PageProps) {
     note,
   });
 
+  const approvedPayment = paymentLink.payments[0]
+    ? {
+        id: paymentLink.payments[0].id,
+        amountPaise: paymentLink.payments[0].amountPaise,
+        utrNumber: paymentLink.payments[0].utrNumber,
+        payerName: paymentLink.payments[0].payerName,
+        payerEmail: paymentLink.payments[0].payerEmail,
+        payerPhone: paymentLink.payments[0].payerPhone,
+        approvedAt: paymentLink.payments[0].approvedAt?.toISOString() || null,
+        createdAt: paymentLink.payments[0].createdAt.toISOString(),
+        merchantName: freelancer.name,
+        merchantUsername: freelancer.username,
+        merchantVpa: freelancer.vpa,
+        invoiceTitle: paymentLink.title,
+      }
+    : null;
+
   return (
     <CustomerPaymentClient
       paymentLink={{
@@ -67,7 +84,8 @@ export default async function PaymentLinkCheckoutPage({ params }: PageProps) {
         mobile: freelancer.mobile,
         username: freelancer.username,
       }}
-      isClosed={isClosed}
+      isClosed={isClosed && !approvedPayment}
+      initialApprovedPayment={approvedPayment}
       upiUri={upiUri}
     />
   );

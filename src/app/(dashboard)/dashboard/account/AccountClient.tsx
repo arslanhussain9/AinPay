@@ -157,11 +157,11 @@ export function AccountClient({ freelancer: initialFreelancer }: AccountClientPr
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0d253d] flex flex-col font-normal selection:bg-[#b9b9f9] selection:text-[#533afd]">
       {/* Top Header */}
-      <header className="bg-white border-b border-[#e3e8ee] px-6 py-4 sticky top-0 z-30 stripe-shadow-sm">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+      <header className="bg-white border-b border-[#e3e8ee] px-4 sm:px-6 py-4 sticky top-0 z-30 stripe-shadow-sm">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
-              <img src="/full-logo.png" alt="AinPay" className="h-6 w-auto object-contain" />
+              <img src="/full-logo.png" alt="AINPAY" className="h-6 w-auto object-contain" />
             </Link>
             <span className="text-[#e3e8ee] text-sm">/</span>
             <Link href="/dashboard" className="text-xs text-[#64748d] hover:text-[#0d253d] transition-colors font-medium">
@@ -193,7 +193,7 @@ export function AccountClient({ freelancer: initialFreelancer }: AccountClientPr
       </header>
 
       {/* Main Container */}
-      <main className="max-w-5xl mx-auto w-full px-6 py-8 flex flex-col gap-8">
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col gap-8">
         {/* Page Title & Profile Summary */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#e2e8f0]">
           <div>
